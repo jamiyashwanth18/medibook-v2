@@ -157,6 +157,64 @@ describe("SignIn screen - patient registration", () => {
   });
 });
 
+describe("SignIn screen - registration consent capture (AC-058)", () => {
+  beforeEach(() => {
+    postMock.mockReset();
+    navigateMock.mockReset();
+    setSessionTokenMock.mockReset();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it("[AC-058] shows the consent statement checkbox, unticked, on the registration form", async () => {
+    const user = userEvent.setup();
+    renderScreen();
+
+    await user.click(screen.getByTestId("register-as-patient-tab"));
+
+    const consentBox = screen.getByTestId("i-consent-to-my-health-data-being-input");
+    expect(consentBox).toBeInTheDocument();
+    expect(consentBox).not.toBeChecked();
+  });
+
+  it("[AC-058] blocks account creation and shows the required-consent message until the statement is accepted", async () => {
+    const user = userEvent.setup();
+    renderScreen();
+
+    await fillRegisterForm(user, { consent: false });
+    await user.click(screen.getByTestId("create-account-btn"));
+
+    expect(await screen.findByText("Consent is required to proceed")).toBeInTheDocument();
+    expect(postMock).not.toHaveBeenCalled();
+  });
+
+  it("[AC-058] sends the accepted consent, so it can be stored with the new account, on a valid submission", async () => {
+    postMock.mockResolvedValue({
+      data: {
+        token: "tok-consent-1",
+        user: { id: "u-5", role: "patient", fullName: "Asha Patient" },
+      },
+      error: undefined,
+    });
+    const user = userEvent.setup();
+    renderScreen();
+
+    await fillRegisterForm(user, { consent: true });
+    await user.click(screen.getByTestId("create-account-btn"));
+
+    await waitFor(() =>
+      expect(postMock).toHaveBeenCalledWith(
+        "/auth/register",
+        expect.objectContaining({
+          body: expect.objectContaining({ consentAccepted: true }),
+        }),
+      ),
+    );
+  });
+});
+
 async function fillSignInForm(
   user: ReturnType<typeof userEvent.setup>,
   opts: { password?: string } = {},

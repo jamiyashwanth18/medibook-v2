@@ -304,16 +304,26 @@ const AUDIT = [
   },
 ];
 
-const CONSENT = {
-  patient: "Priya Sharma",
+// AC-059: the id of the patient this demo clinic's consent-audit card looks up. There is
+// no patient directory in this story's scope, so the card always reads this one account's
+// consent back from the server rather than from anything typed on this screen.
+const CONSENT_PATIENT_ID = "pt-10482";
+
+const CONSENT_PATIENT = {
+  name: "Priya Sharma",
   email: "priya.sharma@inbox.example",
-  given: true,
-  date: "12 Nov 2026",
-  version: "v1.2",
 };
 
 const fmtDate = (iso) => {
   const d = new Date(iso + "T00:00:00");
+  if (isNaN(d.getTime())) return iso;
+  return d.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
+};
+
+// The consent endpoint returns a full timestamp, not a bare date, so it is parsed
+// directly rather than through fmtDate's "append a time" trick.
+const fmtConsentDate = (iso) => {
+  const d = new Date(iso);
   if (isNaN(d.getTime())) return iso;
   return d.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
 };
@@ -409,6 +419,10 @@ export default function Screen() {
   const [selAppt, setSelAppt] = React.useState("AP-4821");
   const [confirmAppt, setConfirmAppt] = React.useState(false);
 
+  // AC-059: whether and when CONSENT_PATIENT_ID's consent was given, read from the
+  // account record itself rather than assumed from anything on this screen.
+  const [consentState, setConsentState] = React.useState({ status: "loading", data: null });
+
   const nameRef = React.useRef(null);
   const timers = React.useRef([]);
 
@@ -420,6 +434,33 @@ export default function Screen() {
   React.useEffect(() => {
     if (formOpen && nameRef.current) nameRef.current.focus();
   }, [formOpen]);
+
+  // AC-059: fetched once the admin opens the consent & audit tab, through the generated
+  // client only, never assumed from the patient registration flow.
+  React.useEffect(() => {
+    if (tab !== "consent" || consentState.status !== "loading") return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const { data, error } = await api.GET("/admin/patients/{id}/consent", {
+          params: { path: { id: CONSENT_PATIENT_ID } },
+        });
+        if (cancelled) return;
+        if (error || !data) {
+          setConsentState({ status: "error", data: null });
+          return;
+        }
+        setConsentState({ status: "loaded", data });
+      } catch {
+        if (!cancelled) setConsentState({ status: "error", data: null });
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [tab, consentState.status]);
+
+  const retryConsentLoad = () => setConsentState({ status: "loading", data: null });
 
   const later = (fn, ms) => {
     timers.current.push(setTimeout(fn, ms));
@@ -1618,60 +1659,79 @@ export default function Screen() {
           arch={90}
           aria-labelledby="h-consent"
         >
-          <PanelHead title={"Patient consent — " + CONSENT.patient} id="h-consent">
+          <PanelHead title={"Patient consent — " + CONSENT_PATIENT.name} id="h-consent">
             captured at registration and kept with the account, as the DPDP baseline requires.
           </PanelHead>
           <div className="flex items-center gap-4 pb-6">
-            <Avatar name={CONSENT.patient} className="h-12 w-12" />
+            <Avatar name={CONSENT_PATIENT.name} className="h-12 w-12" />
             <div>
               <p className="text-[15px] font-semibold" style={{ color: INK }}>
-                {CONSENT.patient}
+                {CONSENT_PATIENT.name}
               </p>
               <p className="text-[12.5px]" style={{ color: MUTED }}>
-                {CONSENT.email}
+                {CONSENT_PATIENT.email}
               </p>
             </div>
           </div>
-          <div style={{ borderTop: "1px solid " + LINE }}>
-            <dl className="atr-num">
-              <div
-                data-wf="i-9-0-0"
-                className="flex items-center justify-between py-4"
-                style={{ borderBottom: "1px solid " + LINE }}
+          {consentState.status === "loading" ? (
+            <p
+              role="status"
+              className="py-6 text-[13px]"
+              style={{ borderTop: "1px solid " + LINE, color: MUTED }}
+            >
+              loading consent status…
+            </p>
+          ) : consentState.status === "error" ? (
+            <div className="py-6" style={{ borderTop: "1px solid " + LINE }}>
+              <p role="alert" className="text-[13px]" style={{ color: INK }}>
+                we could not load this patient&apos;s consent status — try again.
+              </p>
+              <button
+                type="button"
+                onClick={retryConsentLoad}
+                className="atr-focus mt-3 px-4 py-2 text-[12.5px] font-medium"
+                style={{
+                  borderRadius: "999px",
+                  border: "1px solid " + rgba(INK, 0.3),
+                  color: INK,
+                  minHeight: "40px",
+                }}
               >
-                <dt className="text-[13px]" style={{ color: MUTED }}>
-                  Consent given
-                </dt>
-                <dd
-                  className="flex items-center gap-1.5 text-[14px] font-semibold"
-                  style={{ color: INK }}
+                try again
+              </button>
+            </div>
+          ) : (
+            <div style={{ borderTop: "1px solid " + LINE }}>
+              <dl className="atr-num">
+                <div
+                  data-wf="i-9-0-0"
+                  className="flex items-center justify-between py-4"
+                  style={{ borderBottom: "1px solid " + LINE }}
                 >
-                  {Icon(CONSENT.given ? "CheckCircle" : "X", "h-4 w-4")}
-                  {CONSENT.given ? "Yes" : "No"}
-                </dd>
-              </div>
-              <div
-                data-wf="i-9-0-1"
-                className="flex items-center justify-between py-4"
-                style={{ borderBottom: "1px solid " + LINE }}
-              >
-                <dt className="text-[13px]" style={{ color: MUTED }}>
-                  Consent date
-                </dt>
-                <dd className="text-[14px] font-semibold" style={{ color: INK }}>
-                  {CONSENT.date}
-                </dd>
-              </div>
-              <div data-wf="i-9-0-2" className="flex items-center justify-between py-4">
-                <dt className="text-[13px]" style={{ color: MUTED }}>
-                  Consent text version
-                </dt>
-                <dd className="text-[14px] font-semibold" style={{ color: INK }}>
-                  {CONSENT.version}
-                </dd>
-              </div>
-            </dl>
-          </div>
+                  <dt className="text-[13px]" style={{ color: MUTED }}>
+                    Consent given
+                  </dt>
+                  <dd
+                    className="flex items-center gap-1.5 text-[14px] font-semibold"
+                    style={{ color: INK }}
+                  >
+                    {Icon(consentState.data.consentGiven ? "CheckCircle" : "X", "h-4 w-4")}
+                    {consentState.data.consentGiven ? "Yes" : "No"}
+                  </dd>
+                </div>
+                <div data-wf="i-9-0-1" className="flex items-center justify-between py-4">
+                  <dt className="text-[13px]" style={{ color: MUTED }}>
+                    Consent date
+                  </dt>
+                  <dd className="text-[14px] font-semibold" style={{ color: INK }}>
+                    {consentState.data.consentGiven
+                      ? fmtConsentDate(consentState.data.consentDate)
+                      : "—"}
+                  </dd>
+                </div>
+              </dl>
+            </div>
+          )}
           <p className="mt-5 text-[12.5px] leading-relaxed" style={{ color: MUTED }}>
             consent is read-only here. a patient who withdraws it is handled off-screen by the data
             protection officer.

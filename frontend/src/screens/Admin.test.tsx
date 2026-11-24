@@ -1,11 +1,15 @@
-import { render, screen, within } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const postMock = vi.fn();
+const getMock = vi.fn();
 
 vi.mock("@/api/client", () => ({
-  api: { POST: (...args: unknown[]) => postMock(...args) },
+  api: {
+    POST: (...args: unknown[]) => postMock(...args),
+    GET: (...args: unknown[]) => getMock(...args),
+  },
 }));
 
 import Screen from "./Admin";
@@ -33,6 +37,7 @@ async function fillNewDoctorForm(
 describe("Admin screen - doctor account creation", () => {
   beforeEach(() => {
     postMock.mockReset();
+    getMock.mockReset();
   });
 
   afterEach(() => {
@@ -201,5 +206,94 @@ describe("Admin screen - doctor account creation", () => {
     expect(screen.getByTestId("specializations-input")).toBeInTheDocument();
     expect(screen.getByTestId("first-login-password-set-at-first-input")).toBeInTheDocument();
     expect(screen.getByTestId("add-doctor-btn")).toBeInTheDocument();
+  });
+});
+
+async function openConsentTab(user: ReturnType<typeof userEvent.setup>) {
+  await user.click(screen.getByTestId("consent-audit-tab"));
+}
+
+describe("Admin screen - patient consent status view", () => {
+  beforeEach(() => {
+    postMock.mockReset();
+    getMock.mockReset();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it("[AC-059] shows a loading state while the patient's consent status is being fetched", async () => {
+    let resolveRequest: (value: unknown) => void = () => {};
+    getMock.mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          resolveRequest = resolve;
+        }),
+    );
+    const user = userEvent.setup();
+    renderScreen();
+
+    await openConsentTab(user);
+
+    const card = screen.getByTestId("patient-consent-priya-sharma-card");
+    expect(within(card).getByText("loading consent status…")).toBeInTheDocument();
+
+    resolveRequest({
+      data: { patientId: "pt-10482", consentGiven: true, consentDate: "2026-11-12T09:30:00Z" },
+      error: undefined,
+    });
+
+    await waitFor(() =>
+      expect(within(card).queryByText("loading consent status…")).not.toBeInTheDocument(),
+    );
+  });
+
+  it("[AC-059] shows that consent was given and the date it was given, fetched through the generated client", async () => {
+    getMock.mockResolvedValue({
+      data: { patientId: "pt-10482", consentGiven: true, consentDate: "2026-11-12T09:30:00Z" },
+      error: undefined,
+    });
+    const user = userEvent.setup();
+    renderScreen();
+
+    await openConsentTab(user);
+
+    const card = screen.getByTestId("patient-consent-priya-sharma-card");
+    expect(await within(card).findByText("Yes")).toBeInTheDocument();
+    expect(within(card).getByText("12 Nov 2026")).toBeInTheDocument();
+
+    expect(getMock).toHaveBeenCalledWith(
+      "/admin/patients/{id}/consent",
+      expect.objectContaining({ params: { path: { id: "pt-10482" } } }),
+    );
+  });
+
+  it("[AC-059] shows that consent was not given, with no date, when the account has none on record", async () => {
+    getMock.mockResolvedValue({
+      data: { patientId: "pt-10482", consentGiven: false, consentDate: "2026-11-12T09:30:00Z" },
+      error: undefined,
+    });
+    const user = userEvent.setup();
+    renderScreen();
+
+    await openConsentTab(user);
+
+    const card = screen.getByTestId("patient-consent-priya-sharma-card");
+    expect(await within(card).findByText("No")).toBeInTheDocument();
+    expect(within(card).getByText("—")).toBeInTheDocument();
+  });
+
+  it("[AC-059] shows an error message when the consent status cannot be loaded", async () => {
+    getMock.mockResolvedValue({ data: undefined, error: { code: "NOT_FOUND" } });
+    const user = userEvent.setup();
+    renderScreen();
+
+    await openConsentTab(user);
+
+    const card = screen.getByTestId("patient-consent-priya-sharma-card");
+    expect(
+      await within(card).findByText("we could not load this patient's consent status — try again."),
+    ).toBeInTheDocument();
   });
 });

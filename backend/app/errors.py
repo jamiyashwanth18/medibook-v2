@@ -44,3 +44,8 @@ ADMIN_ACCESS_REQUIRED = ErrorCode(
 SPECIALIZATION_REQUIRED = ErrorCode(
     400, "SPECIALIZATION_REQUIRED", "At least one specialization is required."
 )
+
+# GET /admin/patients/{id}/consent (US-024, AC-059): viewing a patient's consent status
+# is an administrator-only action; ADMIN_ACCESS_REQUIRED and NOT_AUTHENTICATED (above)
+# are reused here. The id must name a patient account.
+PATIENT_NOT_FOUND = ErrorCode(404, "PATIENT_NOT_FOUND", "Patient not found.")

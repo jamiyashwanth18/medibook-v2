@@ -19,7 +19,7 @@ from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoin
 
 from app import auth
 from app.database import DATABASE_URL, engine
-from app.routers import admin_doctors
+from app.routers import admin_doctors, admin_patients
 from app.routers import auth as auth_router
 from app.seed import seed_from_env
 
@@ -132,6 +132,7 @@ app.add_middleware(EnforceHTTPSMiddleware)
 app.include_router(auth.router)
 app.include_router(auth_router.router)
 app.include_router(admin_doctors.router)
+app.include_router(admin_patients.router)
 
 
 @app.get("/health")

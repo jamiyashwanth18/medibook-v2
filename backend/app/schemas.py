@@ -5,6 +5,8 @@ generated route returns until it has been implemented. Every model is an ApiMode
 so its JSON uses camelCase names (app/api_model.py).
 """
 
+from datetime import datetime
+
 from app.api_model import ApiModel
 
 
@@ -103,3 +105,13 @@ class DoctorRead(ApiModel):
     email: str
     credentials: str
     specializations: list[str]
+
+
+class PatientConsentRead(ApiModel):
+    """GET /admin/patients/{id}/consent reply (US-024): whether and when the patient's
+    data-handling consent was given (AC-059). Consent is required to register (AC-058),
+    so a patient account always has one of these."""
+
+    patient_id: str
+    consent_given: bool
+    consent_date: datetime
