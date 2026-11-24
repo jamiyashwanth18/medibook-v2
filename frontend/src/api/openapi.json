@@ -175,6 +175,92 @@
         ]
       }
     },
+    "/admin/doctors": {
+      "post": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Create Doctor",
+        "operationId": "create_doctor_admin_doctors_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DoctorCreateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DoctorRead"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sign in first.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Administrator access required.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "At least one specialization is required.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "That email is already registered.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
     "/health": {
       "get": {
         "summary": "Health",
@@ -223,6 +309,75 @@
           "role"
         ],
         "title": "CurrentUser"
+      },
+      "DoctorCreateRequest": {
+        "properties": {
+          "fullName": {
+            "type": "string",
+            "title": "Fullname"
+          },
+          "email": {
+            "type": "string",
+            "title": "Email"
+          },
+          "credentials": {
+            "type": "string",
+            "title": "Credentials"
+          },
+          "specializations": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Specializations"
+          }
+        },
+        "type": "object",
+        "required": [
+          "fullName",
+          "email",
+          "credentials",
+          "specializations"
+        ],
+        "title": "DoctorCreateRequest",
+        "description": "POST /admin/doctors body (US-003). At least one specialization is required\n(AC-010); the doctor's first-login password is set by the server and never\nsupplied here (AC-009)."
+      },
+      "DoctorRead": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "fullName": {
+            "type": "string",
+            "title": "Fullname"
+          },
+          "email": {
+            "type": "string",
+            "title": "Email"
+          },
+          "credentials": {
+            "type": "string",
+            "title": "Credentials"
+          },
+          "specializations": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Specializations"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "fullName",
+          "email",
+          "credentials",
+          "specializations"
+        ],
+        "title": "DoctorRead",
+        "description": "POST /admin/doctors reply: the newly provisioned doctor account (AC-009)."
       },
       "ErrorResponse": {
         "properties": {

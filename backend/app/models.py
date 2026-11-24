@@ -6,16 +6,23 @@ from sqlalchemy import Boolean, DateTime, ForeignKey, String
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.database import Base
+from app.encryption import EncryptedString
 
 
 class User(Base):
     __tablename__ = "users"
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, nullable=False)
+    # Not encrypted (unlike full_name below): auth.find_user looks a user up by this
+    # column's exact value, and Fernet ciphertext is randomised, so the same email would
+    # never compare equal to itself across two writes -- sign-in would break.
     email: Mapped[str] = mapped_column(String(255), nullable=False)
     password_hash: Mapped[str] = mapped_column(String(255), nullable=False)
     role: Mapped[str] = mapped_column(String(50), nullable=False)
-    full_name: Mapped[str] = mapped_column(String(200), nullable=False)
+    # AC-055: a person's name is sensitive personal data, encrypted at rest. It is never
+    # looked up by value, only ever read back for an already-identified user, so the
+    # randomised ciphertext EncryptedString produces costs nothing here.
+    full_name: Mapped[str] = mapped_column(EncryptedString, nullable=False)
 
 
 class UserSession(Base):
@@ -58,7 +65,9 @@ class DoctorProfile(Base):
     user_id: Mapped[str] = mapped_column(
         String(36), ForeignKey("users.id"), nullable=False, unique=True
     )
-    credentials: Mapped[str] = mapped_column(String(255), nullable=False)
+    # AC-055: a doctor's qualifications are sensitive personal data, encrypted at rest
+    # the same way as User.full_name above.
+    credentials: Mapped[str] = mapped_column(EncryptedString, nullable=False)
 
 
 class DoctorSpecialization(Base):

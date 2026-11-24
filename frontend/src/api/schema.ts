@@ -80,6 +80,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/doctors": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Create Doctor */
+        post: operations["create_doctor_admin_doctors_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/health": {
         parameters: {
             query?: never;
@@ -112,6 +129,38 @@ export interface components {
             email: string;
             /** Role */
             role: string;
+        };
+        /**
+         * DoctorCreateRequest
+         * @description POST /admin/doctors body (US-003). At least one specialization is required
+         *     (AC-010); the doctor's first-login password is set by the server and never
+         *     supplied here (AC-009).
+         */
+        DoctorCreateRequest: {
+            /** Fullname */
+            fullName: string;
+            /** Email */
+            email: string;
+            /** Credentials */
+            credentials: string;
+            /** Specializations */
+            specializations: string[];
+        };
+        /**
+         * DoctorRead
+         * @description POST /admin/doctors reply: the newly provisioned doctor account (AC-009).
+         */
+        DoctorRead: {
+            /** Id */
+            id: string;
+            /** Fullname */
+            fullName: string;
+            /** Email */
+            email: string;
+            /** Credentials */
+            credentials: string;
+            /** Specializations */
+            specializations: string[];
         };
         /**
          * ErrorResponse
@@ -345,6 +394,75 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    create_doctor_admin_doctors_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DoctorCreateRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DoctorRead"];
+                };
+            };
+            /** @description At least one specialization is required. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Sign in first. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Administrator access required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description That email is already registered. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };
