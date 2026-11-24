@@ -1,11 +1,14 @@
 // @ts-nocheck -- generated from the approved design under its JS runtime contract; not hand-written TypeScript.
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import React from "react";
+import { useSearchParams } from "react-router-dom";
 
 import * as UI from "@/lib/ui";
 import { Icons } from "@/lib/icons";
 import { brand } from "@/lib/brand";
 import { useNavigate } from "@/lib/navigate";
+import { api } from "@/api/client";
+import { setSessionToken } from "@/lib/api";
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 const { Input, Label, Checkbox } = UI;
@@ -16,8 +19,7 @@ const PRODUCT = "MediBook";
 const CONSENT_VERSION = "v1.2";
 const CONSENT_RECORDED_ON = "24 november 2026";
 
-// Accounts the clinic already has on file (used to demonstrate sign-in and
-// the "email already in use" rule on registration).
+// Accounts the clinic already has on file (used to demonstrate sign-in).
 const REGISTERED_ACCOUNTS = [
   { email: "asha.menon@mailbox.in", full_name: "Asha Menon", role: "patient" },
   { email: "rohit.deshpande@mailbox.in", full_name: "Rohit Deshpande", role: "patient" },
@@ -26,14 +28,32 @@ const REGISTERED_ACCOUNTS = [
 ];
 
 const TABS = [
-  { key: "signin", label: "Sign in", wf: "i-1-0-0" },
-  { key: "register", label: "Register as patient", wf: "i-1-0-1" },
+  { key: "signin", label: "Sign in", testId: "sign-in-tab" },
+  { key: "register", label: "Register as patient", testId: "register-as-patient-tab" },
 ];
 
 const tint = (pct) => `color-mix(in srgb, ${brand.primaryColor} ${pct}%, ${brand.backgroundColor})`;
 
+// A visible message from the approved screen spec, rendered as the sole text of its own
+// element so it reads word for word, with nothing else folded into the same node.
+function Message({ id, children }) {
+  return (
+    <p
+      id={id}
+      role="alert"
+      className="at-enter px-5 py-3 text-sm"
+      style={{ color: brand.primaryColor }}
+    >
+      {children}
+    </p>
+  );
+}
+
 export default function Screen() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const sessionExpired = searchParams.get("expired") === "1";
+
   const [tab, setTab] = React.useState("signin");
 
   // sign in
@@ -55,7 +75,12 @@ export default function Screen() {
   React.useEffect(() => () => timers.current.forEach(clearTimeout), []);
   const later = (fn, ms) => timers.current.push(setTimeout(fn, ms));
 
-  const pill = { borderRadius: 999, border: 0, backgroundColor: tint(8), color: brand.primaryColor };
+  const pill = {
+    borderRadius: 999,
+    border: 0,
+    backgroundColor: tint(8),
+    color: brand.primaryColor,
+  };
   const labelStyle = { color: brand.neutralColor };
 
   const onSignIn = (e) => {
@@ -65,39 +90,55 @@ export default function Screen() {
     setSignInBusy(true);
     later(() => {
       const match = REGISTERED_ACCOUNTS.find(
-        (a) => a.email.toLowerCase() === email.trim().toLowerCase()
+        (a) => a.email.toLowerCase() === email.trim().toLowerCase(),
       );
       if (!match || password.length < 8) {
         setSignInBusy(false);
-        // AC-006: never say which field was wrong, and keep what was typed.
-        setSignInError("we could not sign you in with those details. check your email and password, then try again.");
+        setSignInError("Email or password is incorrect");
         return;
       }
       navigate("find-care");
     }, 700);
   };
 
-  const onRegister = (e) => {
+  const onRegister = async (e) => {
     e.preventDefault();
     if (regBusy) return;
     setRegError(null);
     if (!consent) {
-      setRegError("consent is required before we can create your account — the clinic cannot handle your health data without it.");
-      return;
-    }
-    const taken = REGISTERED_ACCOUNTS.some(
-      (a) => a.email.toLowerCase() === regEmail.trim().toLowerCase()
-    );
-    if (taken) {
-      setRegError("that email is already in use. sign in instead, or register with another address.");
+      setRegError("Consent is required to proceed");
       return;
     }
     setRegBusy(true);
-    later(() => {
+    try {
+      const { data, error } = await api.POST("/auth/register", {
+        body: {
+          fullName: fullName.trim(),
+          email: regEmail.trim(),
+          password: regPassword,
+          consentAccepted: true,
+        },
+      });
+      if (error) {
+        const code = error?.detail?.code;
+        if (code === "EMAIL_ALREADY_REGISTERED") {
+          setRegError("This email is already in use");
+        } else if (code === "CONSENT_REQUIRED") {
+          setRegError("Consent is required to proceed");
+        } else {
+          setRegError("We could not create your account. Please try again.");
+        }
+        setRegBusy(false);
+        return;
+      }
+      setSessionToken(data.token);
       setRegBusy(false);
-      setRegistered(fullName.trim() || regEmail.trim());
-      later(() => navigate("find-care"), 1400);
-    }, 700);
+      setRegistered(data.user.fullName || fullName.trim() || regEmail.trim());
+      later(() => navigate("find-care"), 1200);
+    } catch {
+      setRegBusy(false);
+      setRegError("We could not create your account. Please try again.");
+    }
   };
 
   const onTabKeyDown = (e) => {
@@ -110,20 +151,6 @@ export default function Screen() {
       if (el) el.focus();
     }
   };
-
-  const Notice = ({ id, tone, children }) => (
-    <div
-      id={id}
-      role="alert"
-      className="at-enter flex gap-3 px-5 py-3 text-xs leading-relaxed"
-      style={{ borderRadius: 20, backgroundColor: tint(12), color: brand.primaryColor }}
-    >
-      <AlertCircle className="mt-px h-4 w-4 shrink-0" aria-hidden="true" style={{ color: brand.accentColor }} />
-      <p>
-        <span className="font-semibold">{tone}</span> {children}
-      </p>
-    </div>
-  );
 
   return (
     <div
@@ -147,14 +174,24 @@ export default function Screen() {
       `}</style>
 
       <header className="px-10 py-5" style={{ backgroundColor: tint(10) }}>
-        <h1 data-wf="b-0-0" className="text-lg italic" style={{ fontFamily: brand.fontHeading }}>
+        <h1
+          data-testid="medibook-title"
+          className="text-lg italic"
+          style={{ fontFamily: brand.fontHeading }}
+        >
           {PRODUCT}
         </h1>
       </header>
 
       <div className="flex flex-1 flex-col items-center px-6 py-12">
+        {sessionExpired && (
+          <div className="mb-6 w-full max-w-md">
+            <Message id="at-session-expired">Your session expired, please sign in again</Message>
+          </div>
+        )}
+
         <div
-          data-wf="b-1-0"
+          data-testid="tabs-1"
           role="tablist"
           aria-label="Sign in or register"
           onKeyDown={onTabKeyDown}
@@ -166,7 +203,7 @@ export default function Screen() {
             return (
               <button
                 key={t.key}
-                data-wf={t.wf}
+                data-testid={t.testId}
                 id={`at-tab-${t.key}`}
                 role="tab"
                 type="button"
@@ -193,7 +230,7 @@ export default function Screen() {
           className="w-full max-w-md px-9 pb-9 pt-16"
           style={{ backgroundColor: tint(6), borderRadius: "170px 170px 24px 24px" }}
         >
-          {/* ---------------- Row 3 · Sign in fields ---------------- */}
+          {/* ---------------- Sign in fields ---------------- */}
           <section
             id="at-panel-signin"
             role="tabpanel"
@@ -204,26 +241,30 @@ export default function Screen() {
               <h2 className="text-3xl italic" style={{ fontFamily: brand.fontHeading }}>
                 Sign in
               </h2>
-              <p className="mt-2 text-sm lowercase" style={labelStyle}>
-                welcome back — your appointments are waiting
+              <p className="mt-2 text-sm" style={labelStyle}>
+                Sign in to continue
               </p>
             </div>
 
             <form
-              data-wf="b-2-0"
+              data-testid="sign-in-form"
               id="at-form-signin"
               className="mt-8 space-y-4 text-left"
               onSubmit={onSignIn}
               noValidate
             >
-              {signInError && <Notice id="at-signin-error" tone="we could not continue —">{signInError}</Notice>}
+              {signInError && <Message id="at-signin-error">{signInError}</Message>}
 
               <div className="space-y-1">
-                <Label htmlFor="at-email" className="block pl-4 text-xs lowercase" style={labelStyle}>
+                <Label
+                  htmlFor="at-email"
+                  className="block pl-4 text-xs lowercase"
+                  style={labelStyle}
+                >
                   Email
                 </Label>
                 <Input
-                  data-wf="i-2-0-0"
+                  data-testid="email-input"
                   id="at-email"
                   name="email"
                   type="email"
@@ -239,11 +280,15 @@ export default function Screen() {
               </div>
 
               <div className="space-y-1">
-                <Label htmlFor="at-password" className="block pl-4 text-xs lowercase" style={labelStyle}>
+                <Label
+                  htmlFor="at-password"
+                  className="block pl-4 text-xs lowercase"
+                  style={labelStyle}
+                >
                   Password
                 </Label>
                 <Input
-                  data-wf="i-2-0-1"
+                  data-testid="password-input"
                   id="at-password"
                   name="password"
                   type="password"
@@ -260,7 +305,7 @@ export default function Screen() {
             </form>
           </section>
 
-          {/* ---------------- Row 3 · Register fields ---------------- */}
+          {/* ---------------- Register fields ---------------- */}
           <section
             id="at-panel-register"
             role="tabpanel"
@@ -268,7 +313,10 @@ export default function Screen() {
             hidden={tab !== "register"}
           >
             <div className="text-center">
-              <h2 className="text-3xl italic leading-snug" style={{ fontFamily: brand.fontHeading }}>
+              <h2
+                className="text-3xl italic leading-snug"
+                style={{ fontFamily: brand.fontHeading }}
+              >
                 Create your patient account
               </h2>
               <p className="mt-2 text-sm lowercase" style={labelStyle}>
@@ -278,8 +326,16 @@ export default function Screen() {
 
             {registered ? (
               <div className="at-enter mt-10 text-center">
-                <CheckCircle className="mx-auto h-7 w-7" aria-hidden="true" style={{ color: brand.accentColor }} />
-                <p role="status" className="mt-3 text-xl italic" style={{ fontFamily: brand.fontHeading }}>
+                <CheckCircle
+                  className="mx-auto h-7 w-7"
+                  aria-hidden="true"
+                  style={{ color: brand.accentColor }}
+                />
+                <p
+                  role="status"
+                  className="mt-3 text-xl italic"
+                  style={{ fontFamily: brand.fontHeading }}
+                >
                   Welcome, {registered}.
                 </p>
                 <p
@@ -291,20 +347,24 @@ export default function Screen() {
               </div>
             ) : (
               <form
-                data-wf="b-2-1"
+                data-testid="create-your-patient-account-form"
                 id="at-form-register"
                 className="mt-8 space-y-4 text-left"
                 onSubmit={onRegister}
                 noValidate
               >
-                {regError && <Notice id="at-reg-error" tone="we could not create the account —">{regError}</Notice>}
+                {regError && <Message id="at-reg-error">{regError}</Message>}
 
                 <div className="space-y-1">
-                  <Label htmlFor="at-fullname" className="block pl-4 text-xs lowercase" style={labelStyle}>
+                  <Label
+                    htmlFor="at-fullname"
+                    className="block pl-4 text-xs lowercase"
+                    style={labelStyle}
+                  >
                     Full name
                   </Label>
                   <Input
-                    data-wf="i-2-1-0"
+                    data-testid="full-name-input"
                     id="at-fullname"
                     name="full_name"
                     type="text"
@@ -318,11 +378,15 @@ export default function Screen() {
                 </div>
 
                 <div className="space-y-1">
-                  <Label htmlFor="at-reg-email" className="block pl-4 text-xs lowercase" style={labelStyle}>
+                  <Label
+                    htmlFor="at-reg-email"
+                    className="block pl-4 text-xs lowercase"
+                    style={labelStyle}
+                  >
                     Email
                   </Label>
                   <Input
-                    data-wf="i-2-1-1"
+                    data-testid="email-input-2"
                     id="at-reg-email"
                     name="email"
                     type="email"
@@ -337,11 +401,15 @@ export default function Screen() {
                 </div>
 
                 <div className="space-y-1">
-                  <Label htmlFor="at-reg-password" className="block pl-4 text-xs lowercase" style={labelStyle}>
+                  <Label
+                    htmlFor="at-reg-password"
+                    className="block pl-4 text-xs lowercase"
+                    style={labelStyle}
+                  >
                     Password
                   </Label>
                   <Input
-                    data-wf="i-2-1-2"
+                    data-testid="password-input-2"
                     id="at-reg-password"
                     name="password"
                     type="password"
@@ -354,14 +422,21 @@ export default function Screen() {
                     className="at-focus h-12 w-full px-5 text-sm outline-none"
                     style={pill}
                   />
-                  <p id="at-password-hint" className="pl-4 pt-1 text-xs lowercase" style={labelStyle}>
+                  <p
+                    id="at-password-hint"
+                    className="pl-4 pt-1 text-xs lowercase"
+                    style={labelStyle}
+                  >
                     eight characters or more. stored hashed, never as plain text.
                   </p>
                 </div>
 
-                <div className="flex gap-3 px-5 py-4" style={{ borderRadius: 20, backgroundColor: tint(9) }}>
+                <div
+                  className="flex gap-3 px-5 py-4"
+                  style={{ borderRadius: 20, backgroundColor: tint(9) }}
+                >
                   <Checkbox
-                    data-wf="i-2-1-3"
+                    data-testid="i-consent-to-my-health-data-being-input"
                     id="at-consent"
                     name="consent_given"
                     checked={consent}
@@ -369,7 +444,11 @@ export default function Screen() {
                     className="at-focus mt-0.5 h-4 w-4 shrink-0"
                     style={{ accentColor: brand.accentColor }}
                   />
-                  <Label htmlFor="at-consent" className="text-xs leading-relaxed" style={{ color: brand.primaryColor }}>
+                  <Label
+                    htmlFor="at-consent"
+                    className="text-xs leading-relaxed"
+                    style={{ color: brand.primaryColor }}
+                  >
                     I consent to my health data being handled by the clinic ({CONSENT_VERSION})
                   </Label>
                 </div>
@@ -377,10 +456,11 @@ export default function Screen() {
             )}
           </section>
 
-          {/* ---------------- Row 4 · Sign in action ---------------- */}
+          {/* ---------------- Sign in action ---------------- */}
           <div className="mt-4 space-y-4" hidden={tab !== "signin"}>
-            <div data-wf="b-3-0">
+            <div>
               <button
+                data-testid="sign-in-btn"
                 type="submit"
                 form="at-form-signin"
                 disabled={signInBusy}
@@ -407,10 +487,11 @@ export default function Screen() {
             </p>
           </div>
 
-          {/* ---------------- Row 4 · Register action ---------------- */}
+          {/* ---------------- Register action ---------------- */}
           <div className="mt-4 space-y-4" hidden={tab !== "register" || Boolean(registered)}>
-            <div data-wf="b-3-1">
+            <div>
               <button
+                data-testid="create-account-btn"
                 type="submit"
                 form="at-form-register"
                 disabled={regBusy}
@@ -442,12 +523,11 @@ export default function Screen() {
         </main>
 
         <p
-          data-wf="b-4-0"
           className="mt-8 max-w-md text-center text-xs leading-relaxed lowercase"
           style={{ color: brand.neutralColor }}
         >
-          Doctor and administrator accounts are created by the clinic administrator. Self-registration creates a patient
-          account only.
+          Doctor and administrator accounts are created by the clinic administrator.
+          Self-registration creates a patient account only.
         </p>
       </div>
     </div>

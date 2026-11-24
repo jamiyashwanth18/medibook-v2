@@ -29,6 +29,7 @@ from app.models import User
 
 ADMIN_ROLE = "admin"
 USER_ROLE = "user"
+PATIENT_ROLE = "patient"
 TOKEN_LIFETIME = timedelta(hours=12)
 
 _ALGORITHM = "HS256"
@@ -74,19 +75,35 @@ def find_user(session: Session, email: str) -> User | None:
     return session.scalars(select(User).where(User.email == email)).first()
 
 
-def ensure_user(session: Session, *, email: str, password: str, role: str) -> bool:
-    """Create the user unless one with this email exists. True when it was created."""
-    if find_user(session, email) is not None:
-        return False
+def create_user(session: Session, *, email: str, password: str, role: str, full_name: str) -> User:
+    """Create and flush a new user row. The caller checks the email is free first."""
     values: dict[str, Any] = {
         "email": email,
         "password_hash": hash_password(password),
         "role": role,
+        "full_name": full_name,
     }
     if _KEY_COLUMN.type.python_type is str:
         values[_KEY] = str(uuid4())
-    session.add(User(**values))
+    user = User(**values)
+    session.add(user)
     session.flush()
+    return user
+
+
+def ensure_user(
+    session: Session, *, email: str, password: str, role: str, full_name: str | None = None
+) -> bool:
+    """Create the user unless one with this email exists. True when it was created."""
+    if find_user(session, email) is not None:
+        return False
+    create_user(
+        session,
+        email=email,
+        password=password,
+        role=role,
+        full_name=full_name or email.split("@")[0],
+    )
     return True
 
 

@@ -30,3 +30,33 @@ class UserRead(ApiModel):
     id: str
     email: str
     role: str
+
+
+class ErrorResponse(ApiModel):
+    """The body every error code in app/errors.py raises."""
+
+    code: str
+    message: str
+
+
+class RegisterRequest(ApiModel):
+    """POST /auth/register body (US-001). Consent must be explicitly accepted."""
+
+    full_name: str
+    email: str
+    password: str
+    consent_accepted: bool
+
+
+class RegisteredUser(ApiModel):
+    id: str
+    role: str
+    full_name: str
+
+
+class RegisterResponse(ApiModel):
+    """POST /auth/register reply: the new patient is signed in, so a token comes back
+    the same way it does from /auth/login."""
+
+    token: str
+    user: RegisteredUser

@@ -17,6 +17,7 @@ from sqlalchemy import inspect
 
 from app import auth
 from app.database import DATABASE_URL, engine
+from app.routers import auth as auth_router
 from app.seed import seed_from_env
 
 _ALEMBIC_INI = Path(__file__).resolve().parent.parent / "alembic.ini"
@@ -61,9 +62,23 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     yield
 
 
+_DESCRIPTION = (
+    "Develop a web-based healthcare appointment management application where patients can "
+    "search for doctors based on their disease, symptoms, or medical specialization, view "
+    "available doctors and their consultation time slots, and book, reschedule, or cancel "
+    "appointments. Doctors can manage their availability, view scheduled appointments, "
+    "maintain patient consultation records, and update consultation statuses. The system "
+    "should support role-based access for patients, doctors, and administrators, with an "
+    "admin dashboard to manage doctors, specializations, and appointments. The application "
+    "must use predefined disease-to-specialization mappings to help patients find relevant "
+    "doctors, without using AI, LLMs, or machine learning. It should prevent double bookings "
+    "and display real-time appointment availability. **No payment gateway or online payment "
+    "functionality is required.**"
+)
+
 app = FastAPI(
     title="MediBook V2",
-    description="Develop a web-based healthcare appointment management application where patients can search for doctors based on their disease, symptoms, or medical specialization, view available doctors and their consultation time slots, and book, reschedule, or cancel appointments. Doctors can manage their availability, view scheduled appointments, maintain patient consultation records, and update consultation statuses. The system should support role-based access for patients, doctors, and administrators, with an admin dashboard to manage doctors, specializations, and appointments. The application must use predefined disease-to-specialization mappings to help patients find relevant doctors, without using AI, LLMs, or machine learning. It should prevent double bookings and display real-time appointment availability. **No payment gateway or online payment functionality is required.**",
+    description=_DESCRIPTION,
     version="0.1.0",
     lifespan=lifespan,
 )
@@ -82,6 +97,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 app.include_router(auth.router)
+app.include_router(auth_router.router)
 
 
 @app.get("/health")
