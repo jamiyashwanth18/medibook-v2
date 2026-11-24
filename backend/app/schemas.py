@@ -60,3 +60,25 @@ class RegisterResponse(ApiModel):
 
     token: str
     user: RegisteredUser
+
+
+class LoginRequest(ApiModel):
+    """POST /auth/login body (US-002). The signed-in user's identity always comes from
+    this email/password pair, never assumed from anywhere else."""
+
+    email: str
+    password: str
+
+
+class SessionUser(ApiModel):
+    """The signed-in user's identity, returned alongside the session token (US-002)."""
+
+    id: str
+    role: str
+
+
+class LoginResponse(ApiModel):
+    """POST /auth/login reply: an opaque session token plus who it belongs to (US-002)."""
+
+    token: str
+    user: SessionUser

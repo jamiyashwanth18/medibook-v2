@@ -156,3 +156,122 @@ describe("SignIn screen - patient registration", () => {
     expect(screen.getByTestId("create-account-btn")).toBeInTheDocument();
   });
 });
+
+async function fillSignInForm(
+  user: ReturnType<typeof userEvent.setup>,
+  opts: { password?: string } = {},
+) {
+  await user.type(screen.getByTestId("email-input"), "asha.menon@mailbox.in");
+  await user.type(screen.getByTestId("password-input"), opts.password ?? "correct-horse-battery");
+}
+
+describe("SignIn screen - sign-in and session", () => {
+  beforeEach(() => {
+    postMock.mockReset();
+    navigateMock.mockReset();
+    setSessionTokenMock.mockReset();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it("[AC-005] signs a patient in and redirects to the patient dashboard", async () => {
+    postMock.mockResolvedValue({
+      data: { token: "tok-patient-1", user: { id: "u-10", role: "patient" } },
+      error: undefined,
+    });
+    const user = userEvent.setup();
+    renderScreen();
+
+    await fillSignInForm(user);
+    await user.click(screen.getByTestId("sign-in-btn"));
+
+    await waitFor(() => expect(navigateMock).toHaveBeenCalledWith("find-care"));
+
+    expect(postMock).toHaveBeenCalledWith(
+      "/auth/login",
+      expect.objectContaining({
+        body: { email: "asha.menon@mailbox.in", password: "correct-horse-battery" },
+      }),
+    );
+    expect(setSessionTokenMock).toHaveBeenCalledWith("tok-patient-1");
+  });
+
+  it("[AC-005] signs a doctor in and redirects to the doctor dashboard for their role", async () => {
+    postMock.mockResolvedValue({
+      data: { token: "tok-doctor-1", user: { id: "u-20", role: "doctor" } },
+      error: undefined,
+    });
+    const user = userEvent.setup();
+    renderScreen();
+
+    await fillSignInForm(user);
+    await user.click(screen.getByTestId("sign-in-btn"));
+
+    await waitFor(() => expect(navigateMock).toHaveBeenCalledWith("doctor-schedule"));
+  });
+
+  it("[AC-006] shows the generic incorrect-credentials message and reveals no field on a wrong password", async () => {
+    postMock.mockResolvedValue({
+      data: undefined,
+      error: { code: "INVALID_CREDENTIALS", message: "Incorrect email or password." },
+    });
+    const user = userEvent.setup();
+    renderScreen();
+
+    await fillSignInForm(user, { password: "the-wrong-password" });
+    await user.click(screen.getByTestId("sign-in-btn"));
+
+    expect(await screen.findByText("Email or password is incorrect")).toBeInTheDocument();
+    expect(navigateMock).not.toHaveBeenCalled();
+    expect(setSessionTokenMock).not.toHaveBeenCalled();
+  });
+
+  it("[AC-006] shows the generic incorrect-credentials message when the request itself fails", async () => {
+    postMock.mockRejectedValue(new Error("network down"));
+    const user = userEvent.setup();
+    renderScreen();
+
+    await fillSignInForm(user);
+    await user.click(screen.getByTestId("sign-in-btn"));
+
+    expect(await screen.findByText("Email or password is incorrect")).toBeInTheDocument();
+    expect(setSessionTokenMock).not.toHaveBeenCalled();
+  });
+
+  it("[AC-005] shows a loading state while signing in", async () => {
+    let resolveRequest: (value: unknown) => void = () => {};
+    postMock.mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          resolveRequest = resolve;
+        }),
+    );
+    const user = userEvent.setup();
+    renderScreen();
+
+    await fillSignInForm(user);
+    await user.click(screen.getByTestId("sign-in-btn"));
+
+    expect(screen.getByTestId("sign-in-btn")).toBeDisabled();
+    expect(screen.getByTestId("sign-in-btn")).toHaveTextContent(/checking your details/i);
+
+    resolveRequest({
+      data: { token: "tok-later", user: { id: "u-30", role: "patient" } },
+      error: undefined,
+    });
+
+    await waitFor(() => expect(screen.getByTestId("sign-in-btn")).not.toBeDisabled());
+  });
+
+  it("[AC-008] shows the session-expired message when redirected back here after an idle session", () => {
+    render(
+      <MemoryRouter initialEntries={["/sign-in?expired=1"]}>
+        <Screen />
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByText("Your session expired, please sign in again")).toBeInTheDocument();
+  });
+});

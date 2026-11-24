@@ -26,3 +26,11 @@ EMAIL_ALREADY_REGISTERED = ErrorCode(
     409, "EMAIL_ALREADY_REGISTERED", "That email is already registered."
 )
 CONSENT_REQUIRED = ErrorCode(400, "CONSENT_REQUIRED", "Consent is required to register.")
+
+# POST /auth/login (US-002): one generic message for both a wrong email and a wrong
+# password (AC-006, NFR-003), so a failed sign-in never says which field was wrong.
+INVALID_CREDENTIALS = ErrorCode(401, "INVALID_CREDENTIALS", "Incorrect email or password.")
+
+# Any route that requires a signed-in session, including POST /auth/logout (US-002):
+# no credentials, an expired session (AC-008), or a revoked one all refuse the same way.
+NOT_AUTHENTICATED = ErrorCode(401, "NOT_AUTHENTICATED", "Sign in first.")

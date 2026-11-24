@@ -19,13 +19,14 @@ const PRODUCT = "MediBook";
 const CONSENT_VERSION = "v1.2";
 const CONSENT_RECORDED_ON = "24 november 2026";
 
-// Accounts the clinic already has on file (used to demonstrate sign-in).
-const REGISTERED_ACCOUNTS = [
-  { email: "asha.menon@mailbox.in", full_name: "Asha Menon", role: "patient" },
-  { email: "rohit.deshpande@mailbox.in", full_name: "Rohit Deshpande", role: "patient" },
-  { email: "dr.kavitha.rao@medibook.clinic", full_name: "Dr. Kavitha Rao", role: "doctor" },
-  { email: "frontdesk@medibook.clinic", full_name: "Niranjan Iyer", role: "admin" },
-];
+// AC-005: the dashboard a signed-in user lands on is chosen from their role, never
+// assumed. A role this clinic does not issue yet falls back to Find Care rather than
+// leaving the user on a blank route.
+const ROLE_DASHBOARD_ROUTE = {
+  patient: "find-care",
+  doctor: "doctor-schedule",
+  admin: "admin",
+};
 
 const TABS = [
   { key: "signin", label: "Sign in", testId: "sign-in-tab" },
@@ -83,22 +84,29 @@ export default function Screen() {
   };
   const labelStyle = { color: brand.neutralColor };
 
-  const onSignIn = (e) => {
+  const onSignIn = async (e) => {
     e.preventDefault();
     if (signInBusy) return;
     setSignInError(null);
     setSignInBusy(true);
-    later(() => {
-      const match = REGISTERED_ACCOUNTS.find(
-        (a) => a.email.toLowerCase() === email.trim().toLowerCase(),
-      );
-      if (!match || password.length < 8) {
+    try {
+      // AC-005, AC-006, NFR-003: one call, one generic failure message. The response
+      // never says which of the two fields was wrong, so neither does this screen.
+      const { data, error } = await api.POST("/auth/login", {
+        body: { email: email.trim(), password },
+      });
+      if (error || !data) {
         setSignInBusy(false);
         setSignInError("Email or password is incorrect");
         return;
       }
-      navigate("find-care");
-    }, 700);
+      setSessionToken(data.token);
+      setSignInBusy(false);
+      navigate(ROLE_DASHBOARD_ROUTE[data.user.role] || "find-care");
+    } catch {
+      setSignInBusy(false);
+      setSignInError("Email or password is incorrect");
+    }
   };
 
   const onRegister = async (e) => {

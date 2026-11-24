@@ -13,7 +13,10 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Login */
+        /**
+         * Login
+         * @description AC-005, AC-006, NFR-001, NFR-003: stub only, logic lands in step 2.
+         */
         post: operations["login_auth_login_post"];
         delete?: never;
         options?: never;
@@ -49,6 +52,26 @@ export interface paths {
         put?: never;
         /** Register */
         post: operations["register_auth_register_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/auth/logout": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Logout
+         * @description AC-007, NFR-002: stub only, session revocation lands in step 2.
+         */
+        post: operations["logout_auth_logout_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -103,18 +126,6 @@ export interface components {
             /** Detail */
             detail?: components["schemas"]["ValidationError"][];
         };
-        /** LoginRequest */
-        LoginRequest: {
-            /** Email */
-            email: string;
-            /** Password */
-            password: string;
-        };
-        /** LoginResponse */
-        LoginResponse: {
-            /** Token */
-            token: string;
-        };
         /**
          * RegisterRequest
          * @description POST /auth/register body (US-001). Consent must be explicitly accepted.
@@ -148,6 +159,16 @@ export interface components {
             /** Fullname */
             fullName: string;
         };
+        /**
+         * SessionUser
+         * @description The signed-in user's identity, returned alongside the session token (US-002).
+         */
+        SessionUser: {
+            /** Id */
+            id: string;
+            /** Role */
+            role: string;
+        };
         /** ValidationError */
         ValidationError: {
             /** Location */
@@ -156,6 +177,38 @@ export interface components {
             msg: string;
             /** Error Type */
             type: string;
+        };
+        /** LoginRequest */
+        app__auth__LoginRequest: {
+            /** Email */
+            email: string;
+            /** Password */
+            password: string;
+        };
+        /** LoginResponse */
+        app__auth__LoginResponse: {
+            /** Token */
+            token: string;
+        };
+        /**
+         * LoginRequest
+         * @description POST /auth/login body (US-002). The signed-in user's identity always comes from
+         *     this email/password pair, never assumed from anywhere else.
+         */
+        app__schemas__LoginRequest: {
+            /** Email */
+            email: string;
+            /** Password */
+            password: string;
+        };
+        /**
+         * LoginResponse
+         * @description POST /auth/login reply: an opaque session token plus who it belongs to (US-002).
+         */
+        app__schemas__LoginResponse: {
+            /** Token */
+            token: string;
+            user: components["schemas"]["SessionUser"];
         };
     };
     responses: never;
@@ -175,7 +228,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["LoginRequest"];
+                "application/json": components["schemas"]["app__schemas__LoginRequest"];
             };
         };
         responses: {
@@ -185,7 +238,16 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["LoginResponse"];
+                    "application/json": components["schemas"]["app__schemas__LoginResponse"];
+                };
+            };
+            /** @description Incorrect email or password. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
             /** @description Validation Error */
@@ -266,6 +328,33 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    logout_auth_logout_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Sign in first. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
         };

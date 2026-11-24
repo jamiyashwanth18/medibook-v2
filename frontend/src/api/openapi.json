@@ -12,12 +12,13 @@
           "Auth"
         ],
         "summary": "Login",
+        "description": "AC-005, AC-006, NFR-001, NFR-003: stub only, logic lands in step 2.",
         "operationId": "login_auth_login_post",
         "requestBody": {
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/LoginRequest"
+                "$ref": "#/components/schemas/app__schemas__LoginRequest"
               }
             }
           },
@@ -29,7 +30,17 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/LoginResponse"
+                  "$ref": "#/components/schemas/app__schemas__LoginResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Incorrect email or password.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
                 }
               }
             }
@@ -134,6 +145,36 @@
         }
       }
     },
+    "/auth/logout": {
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Logout",
+        "description": "AC-007, NFR-002: stub only, session revocation lands in step 2.",
+        "operationId": "logout_auth_logout_post",
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "401": {
+            "description": "Sign in first.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
     "/health": {
       "get": {
         "summary": "Health",
@@ -215,37 +256,6 @@
         "type": "object",
         "title": "HTTPValidationError"
       },
-      "LoginRequest": {
-        "properties": {
-          "email": {
-            "type": "string",
-            "title": "Email"
-          },
-          "password": {
-            "type": "string",
-            "title": "Password"
-          }
-        },
-        "type": "object",
-        "required": [
-          "email",
-          "password"
-        ],
-        "title": "LoginRequest"
-      },
-      "LoginResponse": {
-        "properties": {
-          "token": {
-            "type": "string",
-            "title": "Token"
-          }
-        },
-        "type": "object",
-        "required": [
-          "token"
-        ],
-        "title": "LoginResponse"
-      },
       "RegisterRequest": {
         "properties": {
           "fullName": {
@@ -316,6 +326,25 @@
         ],
         "title": "RegisteredUser"
       },
+      "SessionUser": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "role": {
+            "type": "string",
+            "title": "Role"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "role"
+        ],
+        "title": "SessionUser",
+        "description": "The signed-in user's identity, returned alongside the session token (US-002)."
+      },
       "ValidationError": {
         "properties": {
           "loc": {
@@ -348,6 +377,74 @@
           "type"
         ],
         "title": "ValidationError"
+      },
+      "app__auth__LoginRequest": {
+        "properties": {
+          "email": {
+            "type": "string",
+            "title": "Email"
+          },
+          "password": {
+            "type": "string",
+            "title": "Password"
+          }
+        },
+        "type": "object",
+        "required": [
+          "email",
+          "password"
+        ],
+        "title": "LoginRequest"
+      },
+      "app__auth__LoginResponse": {
+        "properties": {
+          "token": {
+            "type": "string",
+            "title": "Token"
+          }
+        },
+        "type": "object",
+        "required": [
+          "token"
+        ],
+        "title": "LoginResponse"
+      },
+      "app__schemas__LoginRequest": {
+        "properties": {
+          "email": {
+            "type": "string",
+            "title": "Email"
+          },
+          "password": {
+            "type": "string",
+            "title": "Password"
+          }
+        },
+        "type": "object",
+        "required": [
+          "email",
+          "password"
+        ],
+        "title": "LoginRequest",
+        "description": "POST /auth/login body (US-002). The signed-in user's identity always comes from\nthis email/password pair, never assumed from anywhere else."
+      },
+      "app__schemas__LoginResponse": {
+        "properties": {
+          "token": {
+            "type": "string",
+            "title": "Token"
+          },
+          "user": {
+            "$ref": "#/components/schemas/SessionUser"
+          }
+        },
+        "type": "object",
+        "required": [
+          "token",
+          "user"
+        ],
+        "title": "LoginResponse",
+        "description": "POST /auth/login reply: an opaque session token plus who it belongs to (US-002)."
       }
     },
     "securitySchemes": {
