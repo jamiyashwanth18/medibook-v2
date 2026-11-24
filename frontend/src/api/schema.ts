@@ -38,6 +38,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/auth/register": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Register */
+        post: operations["register_auth_register_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/health": {
         parameters: {
             query?: never;
@@ -71,6 +88,16 @@ export interface components {
             /** Role */
             role: string;
         };
+        /**
+         * ErrorResponse
+         * @description The body every error code in app/errors.py raises.
+         */
+        ErrorResponse: {
+            /** Code */
+            code: string;
+            /** Message */
+            message: string;
+        };
         /** HTTPValidationError */
         HTTPValidationError: {
             /** Detail */
@@ -87,6 +114,39 @@ export interface components {
         LoginResponse: {
             /** Token */
             token: string;
+        };
+        /**
+         * RegisterRequest
+         * @description POST /auth/register body (US-001). Consent must be explicitly accepted.
+         */
+        RegisterRequest: {
+            /** Fullname */
+            fullName: string;
+            /** Email */
+            email: string;
+            /** Password */
+            password: string;
+            /** Consentaccepted */
+            consentAccepted: boolean;
+        };
+        /**
+         * RegisterResponse
+         * @description POST /auth/register reply: the new patient is signed in, so a token comes back
+         *     the same way it does from /auth/login.
+         */
+        RegisterResponse: {
+            /** Token */
+            token: string;
+            user: components["schemas"]["RegisteredUser"];
+        };
+        /** RegisteredUser */
+        RegisteredUser: {
+            /** Id */
+            id: string;
+            /** Role */
+            role: string;
+            /** Fullname */
+            fullName: string;
         };
         /** ValidationError */
         ValidationError: {
@@ -155,6 +215,57 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CurrentUser"];
+                };
+            };
+        };
+    };
+    register_auth_register_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RegisterRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RegisterResponse"];
+                };
+            };
+            /** @description Consent is required to register. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description That email is already registered. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };

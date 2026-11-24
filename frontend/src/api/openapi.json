@@ -73,6 +73,67 @@
         ]
       }
     },
+    "/auth/register": {
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Register",
+        "operationId": "register_auth_register_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RegisterRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RegisterResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Consent is required to register.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "That email is already registered.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/health": {
       "get": {
         "summary": "Health",
@@ -122,6 +183,25 @@
         ],
         "title": "CurrentUser"
       },
+      "ErrorResponse": {
+        "properties": {
+          "code": {
+            "type": "string",
+            "title": "Code"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message"
+          }
+        },
+        "type": "object",
+        "required": [
+          "code",
+          "message"
+        ],
+        "title": "ErrorResponse",
+        "description": "The body every error code in app/errors.py raises."
+      },
       "HTTPValidationError": {
         "properties": {
           "detail": {
@@ -165,6 +245,76 @@
           "token"
         ],
         "title": "LoginResponse"
+      },
+      "RegisterRequest": {
+        "properties": {
+          "fullName": {
+            "type": "string",
+            "title": "Fullname"
+          },
+          "email": {
+            "type": "string",
+            "title": "Email"
+          },
+          "password": {
+            "type": "string",
+            "title": "Password"
+          },
+          "consentAccepted": {
+            "type": "boolean",
+            "title": "Consentaccepted"
+          }
+        },
+        "type": "object",
+        "required": [
+          "fullName",
+          "email",
+          "password",
+          "consentAccepted"
+        ],
+        "title": "RegisterRequest",
+        "description": "POST /auth/register body (US-001). Consent must be explicitly accepted."
+      },
+      "RegisterResponse": {
+        "properties": {
+          "token": {
+            "type": "string",
+            "title": "Token"
+          },
+          "user": {
+            "$ref": "#/components/schemas/RegisteredUser"
+          }
+        },
+        "type": "object",
+        "required": [
+          "token",
+          "user"
+        ],
+        "title": "RegisterResponse",
+        "description": "POST /auth/register reply: the new patient is signed in, so a token comes back\nthe same way it does from /auth/login."
+      },
+      "RegisteredUser": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "role": {
+            "type": "string",
+            "title": "Role"
+          },
+          "fullName": {
+            "type": "string",
+            "title": "Fullname"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "role",
+          "fullName"
+        ],
+        "title": "RegisteredUser"
       },
       "ValidationError": {
         "properties": {

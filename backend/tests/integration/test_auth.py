@@ -4,51 +4,57 @@ Covers POST /auth/register: account creation with consent, blocked registration 
 consent, duplicate-email rejection, and that stored passwords are hashed (AC-001..AC-004).
 """
 
-from sqlalchemy import inspect, text
+import secrets
 
 from fastapi.testclient import TestClient
+from sqlalchemy import inspect, text
 from sqlalchemy.orm import Session
 
 
 def test_tc001_patient_registers_with_consent_and_is_signed_in(client: TestClient) -> None:
+    email = "alice.morgan@example.com"
+    password = secrets.token_urlsafe(16)
+
     response = client.post(
         "/auth/register",
         json={
-            "name": "Alice Morgan",
-            "email": "alice.morgan@example.com",
-            "password": "P@ssw0rd123",
-            "consent": True,
+            "fullName": "Alice Morgan",
+            "email": email,
+            "password": password,
+            "consentAccepted": True,
         },
     )
 
-    assert response.status_code in (200, 201), response.text
-    data = response.json()
-    assert "token" in data and data["token"]
+    assert response.status_code == 200, response.text
+    body = response.json()
+    assert body["token"]
+    assert body["user"]["fullName"] == "Alice Morgan"
 
-    me = client.get("/auth/me", headers={"Authorization": f"Bearer {data['token']}"})
+    me = client.get("/auth/me", headers={"Authorization": f"Bearer {body['token']}"})
     assert me.status_code == 200, me.text
-    assert me.json()["email"] == "alice.morgan@example.com"
+    assert me.json()["email"] == email
 
 
 def test_tc003_registration_blocked_when_consent_not_given(client: TestClient) -> None:
     email = "carla.diaz@example.com"
+    password = secrets.token_urlsafe(16)
 
     response = client.post(
         "/auth/register",
         json={
-            "name": "Carla Diaz",
+            "fullName": "Carla Diaz",
             "email": email,
-            "password": "P@ssw0rd123",
-            "consent": False,
+            "password": password,
+            "consentAccepted": False,
         },
     )
 
-    assert response.status_code not in (200, 201), response.text
+    assert response.status_code == 400, response.text
     assert "consent" in response.text.lower()
 
     # No account was created: the same email cannot sign in afterwards.
-    login = client.post("/auth/login", json={"email": email, "password": "P@ssw0rd123"})
-    assert login.status_code == 401
+    login = client.post("/auth/login", json={"email": email, "password": password})
+    assert login.status_code == 401, login.text
 
 
 def test_tc005_registration_rejected_for_already_registered_email(client: TestClient) -> None:
@@ -57,43 +63,43 @@ def test_tc005_registration_rejected_for_already_registered_email(client: TestCl
     first = client.post(
         "/auth/register",
         json={
-            "name": "Alice Morgan",
+            "fullName": "Alice Morgan",
             "email": email,
-            "password": "P@ssw0rd123",
-            "consent": True,
+            "password": secrets.token_urlsafe(16),
+            "consentAccepted": True,
         },
     )
-    assert first.status_code in (200, 201), first.text
+    assert first.status_code == 200, first.text
 
     second = client.post(
         "/auth/register",
         json={
-            "name": "Alice Morgan",
+            "fullName": "Alice Morgan",
             "email": email,
-            "password": "Another123!",
-            "consent": True,
+            "password": secrets.token_urlsafe(16),
+            "consentAccepted": True,
         },
     )
 
-    assert second.status_code not in (200, 201), second.text
-    assert "already in use" in second.text.lower()
+    assert second.status_code == 409, second.text
+    assert "already" in second.text.lower()
 
 
 def test_tc007_password_is_stored_only_as_a_hash(client: TestClient, db_session: Session) -> None:
     email = "elena.frost@example.com"
-    password = "SecretPass789!"
+    password = secrets.token_urlsafe(16)
 
     response = client.post(
         "/auth/register",
         json={
-            "name": "Elena Frost",
+            "fullName": "Elena Frost",
             "email": email,
             "password": password,
-            "consent": True,
+            "consentAccepted": True,
         },
     )
-    assert response.status_code in (200, 201), response.text
-    assert "token" in response.json() and response.json()["token"]
+    assert response.status_code == 200, response.text
+    assert response.json()["token"]
 
     # Inspect the stored record directly in the data store, outside the API, without
     # assuming a table or column name: find the users table and its password column.
@@ -115,7 +121,8 @@ def test_tc007_password_is_stored_only_as_a_hash(client: TestClient, db_session:
     stored_password = row[0]
 
     assert stored_password != password
+    assert password not in stored_password
 
     login = client.post("/auth/login", json={"email": email, "password": password})
     assert login.status_code == 200, login.text
-    assert "token" in login.json() and login.json()["token"]
+    assert login.json()["token"]
