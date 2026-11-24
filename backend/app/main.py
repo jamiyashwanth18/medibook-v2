@@ -11,15 +11,48 @@ from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from pathlib import Path
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import RedirectResponse, Response
 from sqlalchemy import inspect
+from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoint
 
 from app import auth
 from app.database import DATABASE_URL, engine
+from app.routers import admin_doctors, admin_patients
+from app.routers import auth as auth_router
 from app.seed import seed_from_env
 
 _ALEMBIC_INI = Path(__file__).resolve().parent.parent / "alembic.ini"
+
+# AC-054, NFR-006: health data must travel to and from the client encrypted. A year in
+# seconds, applied to subdomains too, is the usual HSTS setting (it tells a browser that
+# has seen it once to use HTTPS for every request from here on, never plain HTTP again).
+_HSTS_HEADER = "max-age=31536000; includeSubDomains"
+
+
+class EnforceHTTPSMiddleware(BaseHTTPMiddleware):
+    """Sends every response a Strict-Transport-Security header, and redirects a request
+    a TLS-terminating proxy forwarded over plain HTTP.
+
+    The app itself is reached over TLS in every real deployment, so "plain HTTP" is never
+    `request.url.scheme` (uvicorn behind a proxy, or behind one that terminates TLS, sees
+    HTTP either way): it is the `X-Forwarded-Proto` header the proxy sets to say which
+    scheme the original request used. No such header means either a direct TLS connection
+    or a test client talking to the app in-process, neither of which this redirects.
+    """
+
+    async def dispatch(
+        self, request: Request, call_next: RequestResponseEndpoint
+    ) -> Response:
+        forwarded_proto = request.headers.get("x-forwarded-proto", "").split(",")[0].strip()
+        if forwarded_proto and forwarded_proto.lower() != "https":
+            return RedirectResponse(
+                url=request.url.replace(scheme="https"), status_code=307
+            )
+        response = await call_next(request)
+        response.headers["Strict-Transport-Security"] = _HSTS_HEADER
+        return response
 
 
 def prepare_database() -> None:
@@ -61,9 +94,23 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     yield
 
 
+_DESCRIPTION = (
+    "Develop a web-based healthcare appointment management application where patients can "
+    "search for doctors based on their disease, symptoms, or medical specialization, view "
+    "available doctors and their consultation time slots, and book, reschedule, or cancel "
+    "appointments. Doctors can manage their availability, view scheduled appointments, "
+    "maintain patient consultation records, and update consultation statuses. The system "
+    "should support role-based access for patients, doctors, and administrators, with an "
+    "admin dashboard to manage doctors, specializations, and appointments. The application "
+    "must use predefined disease-to-specialization mappings to help patients find relevant "
+    "doctors, without using AI, LLMs, or machine learning. It should prevent double bookings "
+    "and display real-time appointment availability. **No payment gateway or online payment "
+    "functionality is required.**"
+)
+
 app = FastAPI(
     title="MediBook V2",
-    description="Develop a web-based healthcare appointment management application where patients can search for doctors based on their disease, symptoms, or medical specialization, view available doctors and their consultation time slots, and book, reschedule, or cancel appointments. Doctors can manage their availability, view scheduled appointments, maintain patient consultation records, and update consultation statuses. The system should support role-based access for patients, doctors, and administrators, with an admin dashboard to manage doctors, specializations, and appointments. The application must use predefined disease-to-specialization mappings to help patients find relevant doctors, without using AI, LLMs, or machine learning. It should prevent double bookings and display real-time appointment availability. **No payment gateway or online payment functionality is required.**",
+    description=_DESCRIPTION,
     version="0.1.0",
     lifespan=lifespan,
 )
@@ -81,7 +128,11 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+app.add_middleware(EnforceHTTPSMiddleware)
 app.include_router(auth.router)
+app.include_router(auth_router.router)
+app.include_router(admin_doctors.router)
+app.include_router(admin_patients.router)
 
 
 @app.get("/health")

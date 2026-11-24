@@ -7,6 +7,8 @@ psycopg[binary]==3.2.3
 alembic==1.13.3
 bcrypt==4.2.1
 PyJWT==2.9.0
+# Encrypts sensitive columns at rest (app/encryption.py, US-022, AC-055).
+cryptography==43.0.3
 
 # Checks. The platform installs and runs this file before it reports that the
 # generated tests pass, so the test dependencies belong here rather than in a
@@ -17,3 +19,8 @@ pytest>=8.3
 # back to show on the development dashboard.
 pytest-cov>=5.0
 ruff>=0.6
+
+# BEGIN QUORQ ARCHITECTURE PACKAGES
+passlib>=1.7.4
+reportlab>=4.0
+# END QUORQ ARCHITECTURE PACKAGES

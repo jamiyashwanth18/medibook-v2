@@ -14,11 +14,26 @@ from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
 
 DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./app.db")
 
-# SQLite rejects a connection made on one thread and used on another, which is
-# exactly what happens when FastAPI runs a sync dependency in its threadpool.
-_connect_args = {"check_same_thread": False} if DATABASE_URL.startswith("sqlite") else {}
 
-engine = create_engine(DATABASE_URL, connect_args=_connect_args, future=True)
+def _connect_args(url: str) -> dict[str, object]:
+    """Connection options for `url`: SQLite needs one, PostgreSQL another.
+
+    SQLite rejects a connection made on one thread and used on another, which is
+    exactly what happens when FastAPI runs a sync dependency in its threadpool.
+
+    AC-054, NFR-006: health data must not travel to the database unencrypted, so a
+    PostgreSQL connection requires TLS (DATABASE_SSL_MODE, default "require") unless the
+    URL already names an sslmode of its own -- a deployment whose DATABASE_URL already
+    says `?sslmode=verify-full` is left alone rather than overridden.
+    """
+    if url.startswith("sqlite"):
+        return {"check_same_thread": False}
+    if "sslmode=" in url:
+        return {}
+    return {"sslmode": os.getenv("DATABASE_SSL_MODE", "require")}
+
+
+engine = create_engine(DATABASE_URL, connect_args=_connect_args(DATABASE_URL), future=True)
 SessionLocal = sessionmaker(bind=engine, autoflush=False, expire_on_commit=False)
 
 

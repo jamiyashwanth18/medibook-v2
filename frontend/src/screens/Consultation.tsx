@@ -11,8 +11,16 @@ import { useNavigate } from "@/lib/navigate";
 const { Button, Input, Textarea, Label, Table, THead, TBody, TR, TH, TD, Empty } = UI;
 
 const hexToRgb = (hex) => {
-  const h = String(hex || "").replace("#", "").trim();
-  const v = h.length === 3 ? h.split("").map((c) => c + c).join("") : h;
+  const h = String(hex || "")
+    .replace("#", "")
+    .trim();
+  const v =
+    h.length === 3
+      ? h
+          .split("")
+          .map((c) => c + c)
+          .join("")
+      : h;
   const n = parseInt(v, 16);
   return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
 };
@@ -75,9 +83,21 @@ const INITIAL_LINES = [
 ];
 
 const LINE_FIELDS = [
-  { key: "medicine", wf: "i-2-0-0", label: "Medicine", placeholder: "e.g. Doxycycline 100 mg", width: "30%" },
+  {
+    key: "medicine",
+    wf: "i-2-0-0",
+    label: "Medicine",
+    placeholder: "e.g. Doxycycline 100 mg",
+    width: "30%",
+  },
   { key: "dosage", wf: "i-2-0-1", label: "Dosage", placeholder: "e.g. 1 capsule", width: "18%" },
-  { key: "frequency", wf: "i-2-0-2", label: "Frequency", placeholder: "e.g. twice daily after food", width: "28%" },
+  {
+    key: "frequency",
+    wf: "i-2-0-2",
+    label: "Frequency",
+    placeholder: "e.g. twice daily after food",
+    width: "28%",
+  },
   { key: "duration", wf: "i-2-0-3", label: "Duration", placeholder: "e.g. 7 days", width: "16%" },
 ];
 
@@ -203,7 +223,11 @@ export default function Screen() {
     <span
       key={key}
       className="inline-flex items-center rounded-full px-3 py-1 text-[12px]"
-      style={{ backgroundColor: "rgba(255,255,255,0.6)", color: bodyInk, border: `1px solid ${hairline}` }}
+      style={{
+        backgroundColor: "rgba(255,255,255,0.6)",
+        color: bodyInk,
+        border: `1px solid ${hairline}`,
+      }}
     >
       {label}
     </span>
@@ -274,13 +298,20 @@ export default function Screen() {
           >
             <Icons.AlertCircle className="h-5 w-5" aria-hidden="true" />
           </span>
-          <h1 className="text-[30px] leading-tight" style={{ fontFamily: brand.fontHeading, fontStyle: "italic" }}>
+          <h1
+            className="text-[30px] leading-tight"
+            style={{ fontFamily: brand.fontHeading, fontStyle: "italic" }}
+          >
             This record is not yours to open
           </h1>
-          <p className="mx-auto mt-4 max-w-[52ch] text-[15px] leading-relaxed" style={{ color: bodyInk }}>
-            Consultation records are visible only to the patient, the treating doctor for that appointment, and clinic
-            administrators. You are not the treating doctor on appointment {APPOINTMENT.id}, so the diagnosis,
-            notes and prescription stay closed. This attempt has been written to the record-access log.
+          <p
+            className="mx-auto mt-4 max-w-[52ch] text-[15px] leading-relaxed"
+            style={{ color: bodyInk }}
+          >
+            Consultation records are visible only to the patient, the treating doctor for that
+            appointment, and clinic administrators. You are not the treating doctor on appointment{" "}
+            {APPOINTMENT.id}, so the diagnosis, notes and prescription stay closed. This attempt has
+            been written to the record-access log.
           </p>
           <p className="mx-auto mt-3 max-w-[52ch] text-[13px]" style={{ color: quietInk }}>
             need it for a handover? ask a clinic administrator to reassign the appointment.
@@ -300,7 +331,10 @@ export default function Screen() {
   }
 
   return (
-    <div className="atrium-root mx-auto w-full max-w-5xl px-4 py-8 sm:px-6 lg:px-8" style={rootStyle}>
+    <div
+      className="atrium-root mx-auto w-full max-w-5xl px-4 py-8 sm:px-6 lg:px-8"
+      style={rootStyle}
+    >
       {styleTag}
 
       {/* Row 1 — back + title */}
@@ -311,7 +345,11 @@ export default function Screen() {
             aria-label="Back to schedule"
             title="Back to schedule"
             className="atrium-press flex h-12 w-12 items-center justify-center rounded-full p-0"
-            style={{ backgroundColor: "rgba(255,255,255,0.7)", border: `1px solid ${hairline}`, color: ink }}
+            style={{
+              backgroundColor: "rgba(255,255,255,0.7)",
+              border: `1px solid ${hairline}`,
+              color: ink,
+            }}
             onClick={() => navigate("doctor-schedule")}
           >
             <Icons.ArrowLeft className="h-5 w-5" aria-hidden="true" />
@@ -329,8 +367,18 @@ export default function Screen() {
         >
           <svg className="mx-auto mb-3 h-7 w-16" viewBox="0 0 64 28" fill="none" aria-hidden="true">
             <path d="M32 27V8" stroke={accent} strokeWidth="1.2" strokeLinecap="round" />
-            <path d="M32 14c-6 0-10-3-11-8 5-1 9 1 11 8Z" stroke={accent} strokeWidth="1.2" strokeLinejoin="round" />
-            <path d="M32 19c6 0 10-3 11-8-5-1-9 1-11 8Z" stroke={accent} strokeWidth="1.2" strokeLinejoin="round" />
+            <path
+              d="M32 14c-6 0-10-3-11-8 5-1 9 1 11 8Z"
+              stroke={accent}
+              strokeWidth="1.2"
+              strokeLinejoin="round"
+            />
+            <path
+              d="M32 19c6 0 10-3 11-8-5-1-9 1-11 8Z"
+              stroke={accent}
+              strokeWidth="1.2"
+              strokeLinejoin="round"
+            />
           </svg>
           <p className="text-[11px] uppercase tracking-[0.22em]" style={{ color: quietInk }}>
             visit record
@@ -369,7 +417,11 @@ export default function Screen() {
       <section
         data-wf="b-1-0"
         className="mt-8 px-6 py-8 sm:px-9"
-        style={{ backgroundColor: surface, border: `1px solid ${hairline}`, borderRadius: brand.radius }}
+        style={{
+          backgroundColor: surface,
+          border: `1px solid ${hairline}`,
+          borderRadius: brand.radius,
+        }}
         aria-labelledby="visit-details-heading"
       >
         <div className="flex flex-wrap items-end justify-between gap-4">
@@ -381,19 +433,30 @@ export default function Screen() {
             >
               Visit details
             </h2>
-            <p className="mt-2 flex items-start gap-2 text-[13px] leading-relaxed" style={{ color: quietInk }}>
+            <p
+              className="mt-2 flex items-start gap-2 text-[13px] leading-relaxed"
+              style={{ color: quietInk }}
+            >
               <Icons.Users className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
               <span>
-                only you, Priya Sharma and clinic administrators can open this record — every open is written to the
-                access log.
+                only you, Priya Sharma and clinic administrators can open this record — every open
+                is written to the access log.
               </span>
             </p>
           </div>
           <span
             className="inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-[12px]"
-            style={{ backgroundColor: tintSoft, color: bodyInk, fontVariantNumeric: "tabular-nums" }}
+            style={{
+              backgroundColor: tintSoft,
+              color: bodyInk,
+              fontVariantNumeric: "tabular-nums",
+            }}
           >
-            <span className="atrium-dot h-1.5 w-1.5 rounded-full" style={{ backgroundColor: accent }} aria-hidden="true" />
+            <span
+              className="atrium-dot h-1.5 w-1.5 rounded-full"
+              style={{ backgroundColor: accent }}
+              aria-hidden="true"
+            />
             draft kept on this device · autosaved {DRAFT.autosaved_at}
           </span>
         </div>
@@ -402,7 +465,11 @@ export default function Screen() {
 
         <div className="space-y-7">
           <div>
-            <Label htmlFor="diagnosis" className="mb-2 block text-[13px] font-semibold tracking-wide" style={{ color: ink }}>
+            <Label
+              htmlFor="diagnosis"
+              className="mb-2 block text-[13px] font-semibold tracking-wide"
+              style={{ color: ink }}
+            >
               Diagnosis
             </Label>
             <Input
@@ -420,7 +487,11 @@ export default function Screen() {
               className="w-full rounded-full px-5 py-3 text-[15px]"
               style={fieldStyle(errors && errors.diagnosis)}
             />
-            <p id="diagnosis-help" className="mt-2 pl-5 text-[12.5px]" style={{ color: errors && errors.diagnosis ? alertInk : quietInk }}>
+            <p
+              id="diagnosis-help"
+              className="mt-2 pl-5 text-[12.5px]"
+              style={{ color: errors && errors.diagnosis ? alertInk : quietInk }}
+            >
               {errors && errors.diagnosis
                 ? "a diagnosis is needed before this record can be saved."
                 : "one line, in plain clinical terms — this is what Priya sees on her copy."}
@@ -429,10 +500,17 @@ export default function Screen() {
 
           <div>
             <div className="mb-2 flex items-end justify-between gap-4">
-              <Label htmlFor="visit-notes" className="block text-[13px] font-semibold tracking-wide" style={{ color: ink }}>
+              <Label
+                htmlFor="visit-notes"
+                className="block text-[13px] font-semibold tracking-wide"
+                style={{ color: ink }}
+              >
                 Visit notes
               </Label>
-              <span className="text-[12px]" style={{ color: quietInk, fontVariantNumeric: "tabular-nums" }}>
+              <span
+                className="text-[12px]"
+                style={{ color: quietInk, fontVariantNumeric: "tabular-nums" }}
+              >
                 {notes.length} / {NOTES_LIMIT}
               </span>
             </div>
@@ -451,7 +529,11 @@ export default function Screen() {
               className="w-full px-5 py-4 text-[15px] leading-relaxed"
               style={{ ...fieldStyle(false), borderRadius: brand.radius, resize: "vertical" }}
             />
-            <p id="visit-notes-help" className="mt-2 pl-5 text-[12.5px]" style={{ color: quietInk }}>
+            <p
+              id="visit-notes-help"
+              className="mt-2 pl-5 text-[12.5px]"
+              style={{ color: quietInk }}
+            >
               optional. observations, vitals and advice given at the visit.
             </p>
           </div>
@@ -462,7 +544,11 @@ export default function Screen() {
       <section
         data-wf="b-2-0"
         className="mt-8 px-6 py-8 sm:px-9"
-        style={{ backgroundColor: surface, border: `1px solid ${hairline}`, borderRadius: brand.radius }}
+        style={{
+          backgroundColor: surface,
+          border: `1px solid ${hairline}`,
+          borderRadius: brand.radius,
+        }}
         aria-labelledby="prescription-heading"
       >
         <div className="flex flex-wrap items-end justify-between gap-4">
@@ -488,7 +574,10 @@ export default function Screen() {
 
         <div className="mt-6">
           {lines.length === 0 ? (
-            <div style={{ backgroundColor: tintSoft, borderRadius: brand.radius }} className="px-4 py-6">
+            <div
+              style={{ backgroundColor: tintSoft, borderRadius: brand.radius }}
+              className="px-4 py-6"
+            >
               <Empty
                 title="No medicines on this prescription yet"
                 description="Priya leaves with notes only. Use “Add prescription line” below to write the first medicine, dosage, frequency and duration."
@@ -496,7 +585,10 @@ export default function Screen() {
             </div>
           ) : (
             <div className="overflow-x-auto">
-              <Table className="w-full min-w-[820px]" style={{ fontVariantNumeric: "tabular-nums", borderCollapse: "collapse" }}>
+              <Table
+                className="w-full min-w-[820px]"
+                style={{ fontVariantNumeric: "tabular-nums", borderCollapse: "collapse" }}
+              >
                 <THead>
                   <TR style={{ borderBottom: `1px solid ${hairline}` }}>
                     {LINE_FIELDS.map((f) => (
@@ -570,7 +662,11 @@ export default function Screen() {
                               </Button>
                               <Button
                                 className="atrium-press rounded-full px-3 py-1.5 text-[12px]"
-                                style={{ backgroundColor: "transparent", color: bodyInk, border: `1px solid ${hairline}` }}
+                                style={{
+                                  backgroundColor: "transparent",
+                                  color: bodyInk,
+                                  border: `1px solid ${hairline}`,
+                                }}
                                 onClick={() => setConfirmRemove(null)}
                               >
                                 Keep
@@ -580,7 +676,11 @@ export default function Screen() {
                             <Button
                               aria-label={`Remove line ${idx + 1}${line.medicine ? `, ${line.medicine}` : ""}`}
                               className="atrium-press inline-flex h-9 w-9 items-center justify-center rounded-full p-0"
-                              style={{ backgroundColor: "transparent", color: quietInk, border: `1px solid ${hairline}` }}
+                              style={{
+                                backgroundColor: "transparent",
+                                color: quietInk,
+                                border: `1px solid ${hairline}`,
+                              }}
                               onClick={() => setConfirmRemove(line.id)}
                             >
                               <Icons.Trash className="h-4 w-4" aria-hidden="true" />
@@ -604,13 +704,20 @@ export default function Screen() {
             data-wf="b-3-0"
             onClick={addLine}
             className="atrium-press flex w-full items-center justify-center gap-2 rounded-full px-6 py-3 text-[15px] font-semibold"
-            style={{ backgroundColor: "transparent", color: ink, border: `1px solid ${mixColor(accent, ink, 0.15)}` }}
+            style={{
+              backgroundColor: "transparent",
+              color: ink,
+              border: `1px solid ${mixColor(accent, ink, 0.15)}`,
+            }}
           >
             <Icons.Plus className="h-4 w-4" aria-hidden="true" />
             Add prescription line
           </Button>
         </div>
-        <p className="col-span-12 self-center text-[13px] md:col-span-8" style={{ color: quietInk }}>
+        <p
+          className="col-span-12 self-center text-[13px] md:col-span-8"
+          style={{ color: quietInk }}
+        >
           a new line opens empty, ready for the medicine name.
         </p>
       </div>
@@ -623,7 +730,8 @@ export default function Screen() {
       >
         Records are entered as structured data. No test report or scan uploads are supported.
         <span className="mt-1 block text-[12.5px]" style={{ color: quietInk }}>
-          ask Priya to bring printed reports to the next visit, and type any findings into the notes above.
+          ask Priya to bring printed reports to the next visit, and type any findings into the notes
+          above.
         </span>
       </p>
 
@@ -635,14 +743,23 @@ export default function Screen() {
             tabIndex={-1}
             role="alert"
             className="atrium-fade mb-5 px-6 py-5"
-            style={{ backgroundColor: alertTint, borderRadius: brand.radius, border: `1px solid ${withAlpha(accent, 0.4)}` }}
+            style={{
+              backgroundColor: alertTint,
+              borderRadius: brand.radius,
+              border: `1px solid ${withAlpha(accent, 0.4)}`,
+            }}
           >
             <p className="flex items-center gap-2 text-[15px] font-semibold" style={{ color: ink }}>
               <Icons.AlertCircle className="h-4 w-4" aria-hidden="true" />
               Not saved — {errorCount} {errorCount === 1 ? "thing needs" : "things need"} finishing
             </p>
-            <ul className="mt-3 space-y-1.5 pl-6 text-[13.5px]" style={{ color: alertInk, listStyleType: "disc" }}>
-              {errors.diagnosis ? <li>Diagnosis is empty. A record cannot be stored without it.</li> : null}
+            <ul
+              className="mt-3 space-y-1.5 pl-6 text-[13.5px]"
+              style={{ color: alertInk, listStyleType: "disc" }}
+            >
+              {errors.diagnosis ? (
+                <li>Diagnosis is empty. A record cannot be stored without it.</li>
+              ) : null}
               {Object.keys(errors.lines).map((id) => {
                 const idx = lines.findIndex((l) => l.id === id);
                 const missing = errors.lines[id]
@@ -652,7 +769,8 @@ export default function Screen() {
                 return (
                   <li key={id} style={{ fontVariantNumeric: "tabular-nums" }}>
                     Line {idx + 1}
-                    {lines[idx] && lines[idx].medicine ? ` (${lines[idx].medicine})` : ""} is missing {missing}.
+                    {lines[idx] && lines[idx].medicine ? ` (${lines[idx].medicine})` : ""} is
+                    missing {missing}.
                   </li>
                 );
               })}
@@ -666,7 +784,11 @@ export default function Screen() {
         {phase === "saved" && !dirtySinceSave ? (
           <div
             className="atrium-fade mb-5 flex flex-wrap items-center gap-3 px-6 py-5"
-            style={{ backgroundColor: tintSoft, borderRadius: brand.radius, border: `1px solid ${hairline}` }}
+            style={{
+              backgroundColor: tintSoft,
+              borderRadius: brand.radius,
+              border: `1px solid ${hairline}`,
+            }}
             role="status"
           >
             <span
@@ -679,10 +801,13 @@ export default function Screen() {
               <p className="text-[15px] font-semibold" style={{ color: ink }}>
                 Consultation record saved for Priya Sharma
               </p>
-              <p className="text-[13px]" style={{ color: bodyInk, fontVariantNumeric: "tabular-nums" }}>
+              <p
+                className="text-[13px]"
+                style={{ color: bodyInk, fontVariantNumeric: "tabular-nums" }}
+              >
                 stored against appointment {APPOINTMENT.id} at {savedAt} with {lines.length}{" "}
-                {lines.length === 1 ? "prescription line" : "prescription lines"} · she can read and download it from
-                her appointments.
+                {lines.length === 1 ? "prescription line" : "prescription lines"} · she can read and
+                download it from her appointments.
               </p>
             </div>
           </div>
@@ -707,9 +832,18 @@ export default function Screen() {
               {phase === "saving" ? (
                 <>
                   <span className="flex items-center gap-1" aria-hidden="true">
-                    <span className="atrium-dot h-1.5 w-1.5 rounded-full" style={{ backgroundColor: cream }} />
-                    <span className="atrium-dot h-1.5 w-1.5 rounded-full" style={{ backgroundColor: cream }} />
-                    <span className="atrium-dot h-1.5 w-1.5 rounded-full" style={{ backgroundColor: cream }} />
+                    <span
+                      className="atrium-dot h-1.5 w-1.5 rounded-full"
+                      style={{ backgroundColor: cream }}
+                    />
+                    <span
+                      className="atrium-dot h-1.5 w-1.5 rounded-full"
+                      style={{ backgroundColor: cream }}
+                    />
+                    <span
+                      className="atrium-dot h-1.5 w-1.5 rounded-full"
+                      style={{ backgroundColor: cream }}
+                    />
                   </span>
                   Saving record…
                 </>
@@ -727,10 +861,10 @@ export default function Screen() {
             {phase === "saving"
               ? "writing the record and prescription against this appointment…"
               : phase === "saved" && !dirtySinceSave
-              ? "saved. nothing further is needed for this visit."
-              : dirtySinceSave
-              ? `edited since the ${savedAt} save — save again to keep the changes.`
-              : "saves the diagnosis, notes and every prescription line against this appointment."}
+                ? "saved. nothing further is needed for this visit."
+                : dirtySinceSave
+                  ? `edited since the ${savedAt} save — save again to keep the changes.`
+                  : "saves the diagnosis, notes and every prescription line against this appointment."}
           </p>
         </div>
       </div>
