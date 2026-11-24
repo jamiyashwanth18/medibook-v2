@@ -2,6 +2,747 @@
 openapi: 3.1.0
 info:
   title: MediBook V2
-  version: architecture-v0
+  version: architecture-v1
   description: Designed API from the approved architecture (not extracted from code).
-paths: {}
+paths:
+  /admin/appointments:
+    get:
+      summary: Admin views appointments across doctors, filterable by doctor or date,
+        with patient, doctor, date/time, status.
+      description: Admin views appointments across doctors, filterable by doctor or
+        date, with patient, doctor, date/time, status.
+      operationId: get_admin_appointments
+      parameters: []
+      responses:
+        '200':
+          description: '{appointments:[...]}'
+      security:
+      - bearerAuth: []
+  /admin/audit/record-access:
+    get:
+      summary: Admin reviews consultation-record access audit entries (who, which
+        record, when).
+      description: Admin reviews consultation-record access audit entries (who, which
+        record, when).
+      operationId: get_admin_audit_record_access
+      parameters: []
+      responses:
+        '200':
+          description: '{entries:[...]}'
+      security:
+      - bearerAuth: []
+  /admin/doctors:
+    post:
+      summary: Admin provisions a doctor account with name, email, credentials and
+        one or more specializations; first-login password se
+      description: Admin provisions a doctor account with name, email, credentials
+        and one or more specializations; first-login password set to <set-at-first-login>.
+        At least one specialization required.
+      operationId: post_admin_doctors
+      parameters: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              description: '{full_name, email, credentials, specialization_ids:[...]}'
+      responses:
+        '200':
+          description: '{doctor}'
+      security:
+      - bearerAuth: []
+  /admin/doctors/{id}:
+    patch:
+      summary: Admin edits or deactivates a doctor; deactivation removes from search
+        and revokes the doctor's sessions.
+      description: Admin edits or deactivates a doctor; deactivation removes from
+        search and revokes the doctor's sessions.
+      operationId: patch_admin_doctors_id
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              description: '{specialization_ids?, credentials?, is_active?}'
+      responses:
+        '200':
+          description: '{doctor}'
+      security:
+      - bearerAuth: []
+  /admin/mappings:
+    post:
+      summary: Admin maintains predefined disease/symptom-to-specialization mapping
+        entries; changes reflect in subsequent searches.
+      description: Admin maintains predefined disease/symptom-to-specialization mapping
+        entries; changes reflect in subsequent searches.
+      operationId: post_admin_mappings
+      parameters: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              description: '{term, term_type, specialization_ids:[...]}'
+      responses:
+        '200':
+          description: '{mapping}'
+      security:
+      - bearerAuth: []
+  /admin/patients/{id}/consent:
+    get:
+      summary: Admin views whether and when a patient gave data-handling consent.
+      description: Admin views whether and when a patient gave data-handling consent.
+      operationId: get_admin_patients_id_consent
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: '{consent_given, consent_date}'
+      security:
+      - bearerAuth: []
+  /admin/specializations:
+    post:
+      summary: Admin creates/edits/removes specializations; removal of a referenced
+        specialization warns about dependencies.
+      description: Admin creates/edits/removes specializations; removal of a referenced
+        specialization warns about dependencies.
+      operationId: post_admin_specializations
+      parameters: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              description: '{name}'
+      responses:
+        '200':
+          description: '{specialization}'
+      security:
+      - bearerAuth: []
+  /appointments:
+    post:
+      summary: Book an available slot with row-lock concurrency protection; returns
+        in-person, fee-offline confirmation. 409 if slot no
+      description: Book an available slot with row-lock concurrency protection; returns
+        in-person, fee-offline confirmation. 409 if slot no longer available.
+      operationId: post_appointments
+      parameters: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              description: '{slot_id}'
+      responses:
+        '200':
+          description: '{appointment:{id, status, slot}, message}'
+      security:
+      - bearerAuth: []
+  /appointments/{id}/cancel:
+    patch:
+      summary: Cancel an upcoming appointment within the window, freeing the slot.
+        Blocked past cut-off. Admin may also cancel.
+      description: Cancel an upcoming appointment within the window, freeing the slot.
+        Blocked past cut-off. Admin may also cancel.
+      operationId: patch_appointments_id_cancel
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              description: '{}'
+      responses:
+        '200':
+          description: '{appointment, message}'
+      security:
+      - bearerAuth: []
+  /appointments/{id}/consultation:
+    post:
+      summary: Treating doctor records diagnosis and visit notes against the appointment
+        and patient. No attachment/upload option.
+      description: Treating doctor records diagnosis and visit notes against the appointment
+        and patient. No attachment/upload option.
+      operationId: post_appointments_id_consultation
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              description: '{diagnosis, visit_notes}'
+      responses:
+        '200':
+          description: '{consultation_record}'
+      security:
+      - bearerAuth: []
+  /appointments/{id}/reschedule:
+    patch:
+      summary: Move appointment to another available slot within the configured window;
+        releases old slot. Blocked past cut-off.
+      description: Move appointment to another available slot within the configured
+        window; releases old slot. Blocked past cut-off.
+      operationId: patch_appointments_id_reschedule
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              description: '{new_slot_id}'
+      responses:
+        '200':
+          description: '{appointment, message}'
+      security:
+      - bearerAuth: []
+  /auth/login:
+    post:
+      summary: Email/password sign-in; returns opaque session token in body. Generic
+        failure message reveals neither field.
+      description: Email/password sign-in; returns opaque session token in body. Generic
+        failure message reveals neither field.
+      operationId: post_auth_login
+      parameters: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              description: '{email, password}'
+      responses:
+        '200':
+          description: '{token, user:{id, role}}'
+  /auth/logout:
+    post:
+      summary: Revokes the current session server-side.
+      description: Revokes the current session server-side.
+      operationId: post_auth_logout
+      parameters: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              description: '{}'
+      responses:
+        '200':
+          description: 204 No Content
+      security:
+      - bearerAuth: []
+  /auth/register:
+    post:
+      summary: Patient self-registration with mandatory consent; creates a patient
+        account only and signs in. Rejects duplicate email a
+      description: Patient self-registration with mandatory consent; creates a patient
+        account only and signs in. Rejects duplicate email and missing consent.
+      operationId: post_auth_register
+      parameters: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              description: '{full_name, email, password, consent_accepted}'
+      responses:
+        '200':
+          description: '{token, user:{id, role, full_name}}'
+  /consultation-records/{id}:
+    get:
+      summary: View a consultation record and prescription; allowed only to its patient,
+        treating doctor, or admin; access is audit-log
+      description: View a consultation record and prescription; allowed only to its
+        patient, treating doctor, or admin; access is audit-logged.
+      operationId: get_consultation_records_id
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: '{record:{diagnosis, visit_notes, prescriptions:[...]}}'
+      security:
+      - bearerAuth: []
+  /consultation-records/{id}/pdf:
+    get:
+      summary: Download a generated PDF of the consultation record and prescription;
+        access authorized and audit-logged.
+      description: Download a generated PDF of the consultation record and prescription;
+        access authorized and audit-logged.
+      operationId: get_consultation_records_id_pdf
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: application/pdf binary
+      security:
+      - bearerAuth: []
+  /consultation-records/{id}/prescriptions:
+    post:
+      summary: Add structured prescription lines (medicine, dosage, frequency, duration);
+        each required field must be present.
+      description: Add structured prescription lines (medicine, dosage, frequency,
+        duration); each required field must be present.
+      operationId: post_consultation_records_id_prescriptions
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              description: '{lines:[{medicine, dosage, frequency, duration}]}'
+      responses:
+        '200':
+          description: '{prescription_lines:[...]}'
+      security:
+      - bearerAuth: []
+  /doctor/appointments:
+    get:
+      summary: Doctor dashboard of upcoming/past appointments with patient name, date/time,
+        status.
+      description: Doctor dashboard of upcoming/past appointments with patient name,
+        date/time, status.
+      operationId: get_doctor_appointments
+      parameters: []
+      responses:
+        '200':
+          description: '{appointments:[...]}'
+      security:
+      - bearerAuth: []
+  /doctor/appointments/{id}/status:
+    patch:
+      summary: Set appointment outcome to completed or no-show; prevents invalid transitions
+        (e.g. from cancelled).
+      description: Set appointment outcome to completed or no-show; prevents invalid
+        transitions (e.g. from cancelled).
+      operationId: patch_doctor_appointments_id_status
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              description: '{status}'
+      responses:
+        '200':
+          description: '{appointment}'
+      security:
+      - bearerAuth: []
+  /doctor/availability:
+    post:
+      summary: Define recurring weekly availability; system generates fixed-length
+        bookable slots. Removing a period with bookings warn
+      description: Define recurring weekly availability; system generates fixed-length
+        bookable slots. Removing a period with bookings warns and does not silently
+        delete.
+      operationId: post_doctor_availability
+      parameters: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              description: '{weekday, start_time, end_time, slot_length_minutes}'
+      responses:
+        '200':
+          description: '{pattern, generated_slots_count}'
+      security:
+      - bearerAuth: []
+  /doctors/{id}/slots:
+    get:
+      summary: List a doctor's currently available fixed-length slots reflecting real-time
+        availability.
+      description: List a doctor's currently available fixed-length slots reflecting
+        real-time availability.
+      operationId: get_doctors_id_slots
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: '{slots:[{id, start_at, end_at, status}]}'
+      security:
+      - bearerAuth: []
+  /me/appointments:
+    get:
+      summary: Patient dashboard of upcoming and past appointments with doctor, specialization,
+        date/time, status; empty-state when non
+      description: Patient dashboard of upcoming and past appointments with doctor,
+        specialization, date/time, status; empty-state when none.
+      operationId: get_me_appointments
+      parameters: []
+      responses:
+        '200':
+          description: '{appointments:[...]}'
+      security:
+      - bearerAuth: []
+  /search:
+    get:
+      summary: 'Resolve disease/symptom/specialization term via predefined mapping
+        (no AI) and list matching active doctors; empty with '
+      description: Resolve disease/symptom/specialization term via predefined mapping
+        (no AI) and list matching active doctors; empty with no-results flag when
+        unmatched.
+      operationId: get_search
+      parameters: []
+      responses:
+        '200':
+          description: '{resolved_specializations:[...], doctors:[...], no_results:false}'
+      security:
+      - bearerAuth: []
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+  schemas:
+    users:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        role:
+          type: string
+        full_name:
+          type: string
+        email:
+          type: string
+        password_hash:
+          type: string
+        is_active:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+      required:
+      - id
+      - role
+      - full_name
+      - email
+      - password_hash
+      - is_active
+      - created_at
+    patient_consents:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        user_id:
+          type: string
+          format: uuid
+        consent_given:
+          type: boolean
+        consent_date:
+          type: string
+          format: date-time
+        consent_text_version:
+          type: string
+      required:
+      - id
+      - user_id
+      - consent_given
+      - consent_date
+      - consent_text_version
+    doctor_profiles:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        user_id:
+          type: string
+          format: uuid
+        credentials:
+          type: string
+        must_reset_password:
+          type: boolean
+      required:
+      - id
+      - user_id
+      - must_reset_password
+    specializations:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+      required:
+      - id
+      - name
+    doctor_specializations:
+      type: object
+      properties:
+        doctor_id:
+          type: string
+          format: uuid
+        specialization_id:
+          type: string
+          format: uuid
+      required:
+      - doctor_id
+      - specialization_id
+    symptom_mappings:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        term:
+          type: string
+        term_type:
+          type: string
+        normalized_term:
+          type: string
+      required:
+      - id
+      - term
+      - term_type
+      - normalized_term
+    mapping_specializations:
+      type: object
+      properties:
+        mapping_id:
+          type: string
+          format: uuid
+        specialization_id:
+          type: string
+          format: uuid
+      required:
+      - mapping_id
+      - specialization_id
+    availability_patterns:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        doctor_id:
+          type: string
+          format: uuid
+        weekday:
+          type: string
+        start_time:
+          type: string
+        end_time:
+          type: string
+        slot_length_minutes:
+          type: string
+        is_active:
+          type: boolean
+      required:
+      - id
+      - doctor_id
+      - weekday
+      - start_time
+      - end_time
+      - slot_length_minutes
+      - is_active
+    slots:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        doctor_id:
+          type: string
+          format: uuid
+        pattern_id:
+          type: string
+          format: uuid
+        start_at:
+          type: string
+          format: date-time
+        end_at:
+          type: string
+          format: date-time
+        status:
+          type: string
+      required:
+      - id
+      - doctor_id
+      - start_at
+      - end_at
+      - status
+    appointments:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        slot_id:
+          type: string
+          format: uuid
+        patient_id:
+          type: string
+          format: uuid
+        doctor_id:
+          type: string
+          format: uuid
+        status:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+      required:
+      - id
+      - slot_id
+      - patient_id
+      - doctor_id
+      - status
+      - created_at
+      - updated_at
+    consultation_records:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        appointment_id:
+          type: string
+          format: uuid
+        patient_id:
+          type: string
+          format: uuid
+        doctor_id:
+          type: string
+          format: uuid
+        diagnosis:
+          type: string
+        visit_notes:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+      required:
+      - id
+      - appointment_id
+      - patient_id
+      - doctor_id
+      - created_at
+    prescription_lines:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        consultation_record_id:
+          type: string
+          format: uuid
+        medicine:
+          type: string
+        dosage:
+          type: string
+        frequency:
+          type: string
+        duration:
+          type: string
+      required:
+      - id
+      - consultation_record_id
+      - medicine
+      - dosage
+      - frequency
+      - duration
+    sessions:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        user_id:
+          type: string
+          format: uuid
+        token_hash:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        last_active_at:
+          type: string
+          format: date-time
+        expires_at:
+          type: string
+          format: date-time
+        revoked_at:
+          type: string
+          format: date-time
+      required:
+      - id
+      - user_id
+      - token_hash
+      - created_at
+      - last_active_at
+      - expires_at
+    record_access_audit:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        user_id:
+          type: string
+          format: uuid
+        consultation_record_id:
+          type: string
+          format: uuid
+        action:
+          type: string
+        accessed_at:
+          type: string
+          format: date-time
+      required:
+      - id
+      - user_id
+      - consultation_record_id
+      - action
+      - accessed_at
