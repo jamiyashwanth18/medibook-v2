@@ -34,3 +34,13 @@ INVALID_CREDENTIALS = ErrorCode(401, "INVALID_CREDENTIALS", "Incorrect email or 
 # Any route that requires a signed-in session, including POST /auth/logout (US-002):
 # no credentials, an expired session (AC-008), or a revoked one all refuse the same way.
 NOT_AUTHENTICATED = ErrorCode(401, "NOT_AUTHENTICATED", "Sign in first.")
+
+# POST /admin/doctors (US-003): provisioning a doctor account is an administrator-only
+# action (AC-009), and the account cannot be saved without at least one specialization
+# (AC-010). EMAIL_ALREADY_REGISTERED (above) is reused when the email is already taken.
+ADMIN_ACCESS_REQUIRED = ErrorCode(
+    403, "ADMIN_ACCESS_REQUIRED", "Administrator access required."
+)
+SPECIALIZATION_REQUIRED = ErrorCode(
+    400, "SPECIALIZATION_REQUIRED", "At least one specialization is required."
+)

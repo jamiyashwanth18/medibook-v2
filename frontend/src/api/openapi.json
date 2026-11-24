@@ -6,58 +6,6 @@
     "version": "0.1.0"
   },
   "paths": {
-    "/auth/login": {
-      "post": {
-        "tags": [
-          "Auth"
-        ],
-        "summary": "Login",
-        "description": "AC-005, AC-006, NFR-001, NFR-003: stub only, logic lands in step 2.",
-        "operationId": "login_auth_login_post",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/app__schemas__LoginRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/app__schemas__LoginResponse"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Incorrect email or password.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/auth/me": {
       "get": {
         "tags": [
@@ -145,13 +93,65 @@
         }
       }
     },
+    "/auth/login": {
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Login",
+        "description": "AC-005, AC-006, NFR-001, NFR-003: one generic failure for a wrong email or a wrong\npassword, so a failed sign-in never says which field was wrong.",
+        "operationId": "login_auth_login_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoginResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Incorrect email or password.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/auth/logout": {
       "post": {
         "tags": [
           "Auth"
         ],
         "summary": "Logout",
-        "description": "AC-007, NFR-002: stub only, session revocation lands in step 2.",
+        "description": "AC-007, NFR-002: ends the session named by this request's bearer token, so a later\nrequest with the same token is refused like any other invalid one.",
         "operationId": "logout_auth_logout_post",
         "responses": {
           "204": {
@@ -255,6 +255,43 @@
         },
         "type": "object",
         "title": "HTTPValidationError"
+      },
+      "LoginRequest": {
+        "properties": {
+          "email": {
+            "type": "string",
+            "title": "Email"
+          },
+          "password": {
+            "type": "string",
+            "title": "Password"
+          }
+        },
+        "type": "object",
+        "required": [
+          "email",
+          "password"
+        ],
+        "title": "LoginRequest",
+        "description": "POST /auth/login body (US-002). The signed-in user's identity always comes from\nthis email/password pair, never assumed from anywhere else."
+      },
+      "LoginResponse": {
+        "properties": {
+          "token": {
+            "type": "string",
+            "title": "Token"
+          },
+          "user": {
+            "$ref": "#/components/schemas/SessionUser"
+          }
+        },
+        "type": "object",
+        "required": [
+          "token",
+          "user"
+        ],
+        "title": "LoginResponse",
+        "description": "POST /auth/login reply: an opaque session token plus who it belongs to (US-002)."
       },
       "RegisterRequest": {
         "properties": {
@@ -377,74 +414,6 @@
           "type"
         ],
         "title": "ValidationError"
-      },
-      "app__auth__LoginRequest": {
-        "properties": {
-          "email": {
-            "type": "string",
-            "title": "Email"
-          },
-          "password": {
-            "type": "string",
-            "title": "Password"
-          }
-        },
-        "type": "object",
-        "required": [
-          "email",
-          "password"
-        ],
-        "title": "LoginRequest"
-      },
-      "app__auth__LoginResponse": {
-        "properties": {
-          "token": {
-            "type": "string",
-            "title": "Token"
-          }
-        },
-        "type": "object",
-        "required": [
-          "token"
-        ],
-        "title": "LoginResponse"
-      },
-      "app__schemas__LoginRequest": {
-        "properties": {
-          "email": {
-            "type": "string",
-            "title": "Email"
-          },
-          "password": {
-            "type": "string",
-            "title": "Password"
-          }
-        },
-        "type": "object",
-        "required": [
-          "email",
-          "password"
-        ],
-        "title": "LoginRequest",
-        "description": "POST /auth/login body (US-002). The signed-in user's identity always comes from\nthis email/password pair, never assumed from anywhere else."
-      },
-      "app__schemas__LoginResponse": {
-        "properties": {
-          "token": {
-            "type": "string",
-            "title": "Token"
-          },
-          "user": {
-            "$ref": "#/components/schemas/SessionUser"
-          }
-        },
-        "type": "object",
-        "required": [
-          "token",
-          "user"
-        ],
-        "title": "LoginResponse",
-        "description": "POST /auth/login reply: an opaque session token plus who it belongs to (US-002)."
       }
     },
     "securitySchemes": {

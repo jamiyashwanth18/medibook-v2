@@ -4,26 +4,6 @@
  */
 
 export interface paths {
-    "/auth/login": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Login
-         * @description AC-005, AC-006, NFR-001, NFR-003: stub only, logic lands in step 2.
-         */
-        post: operations["login_auth_login_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/auth/me": {
         parameters: {
             query?: never;
@@ -58,6 +38,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/auth/login": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Login
+         * @description AC-005, AC-006, NFR-001, NFR-003: one generic failure for a wrong email or a wrong
+         *     password, so a failed sign-in never says which field was wrong.
+         */
+        post: operations["login_auth_login_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/auth/logout": {
         parameters: {
             query?: never;
@@ -69,7 +70,8 @@ export interface paths {
         put?: never;
         /**
          * Logout
-         * @description AC-007, NFR-002: stub only, session revocation lands in step 2.
+         * @description AC-007, NFR-002: ends the session named by this request's bearer token, so a later
+         *     request with the same token is refused like any other invalid one.
          */
         post: operations["logout_auth_logout_post"];
         delete?: never;
@@ -127,6 +129,26 @@ export interface components {
             detail?: components["schemas"]["ValidationError"][];
         };
         /**
+         * LoginRequest
+         * @description POST /auth/login body (US-002). The signed-in user's identity always comes from
+         *     this email/password pair, never assumed from anywhere else.
+         */
+        LoginRequest: {
+            /** Email */
+            email: string;
+            /** Password */
+            password: string;
+        };
+        /**
+         * LoginResponse
+         * @description POST /auth/login reply: an opaque session token plus who it belongs to (US-002).
+         */
+        LoginResponse: {
+            /** Token */
+            token: string;
+            user: components["schemas"]["SessionUser"];
+        };
+        /**
          * RegisterRequest
          * @description POST /auth/register body (US-001). Consent must be explicitly accepted.
          */
@@ -178,38 +200,6 @@ export interface components {
             /** Error Type */
             type: string;
         };
-        /** LoginRequest */
-        app__auth__LoginRequest: {
-            /** Email */
-            email: string;
-            /** Password */
-            password: string;
-        };
-        /** LoginResponse */
-        app__auth__LoginResponse: {
-            /** Token */
-            token: string;
-        };
-        /**
-         * LoginRequest
-         * @description POST /auth/login body (US-002). The signed-in user's identity always comes from
-         *     this email/password pair, never assumed from anywhere else.
-         */
-        app__schemas__LoginRequest: {
-            /** Email */
-            email: string;
-            /** Password */
-            password: string;
-        };
-        /**
-         * LoginResponse
-         * @description POST /auth/login reply: an opaque session token plus who it belongs to (US-002).
-         */
-        app__schemas__LoginResponse: {
-            /** Token */
-            token: string;
-            user: components["schemas"]["SessionUser"];
-        };
     };
     responses: never;
     parameters: never;
@@ -219,48 +209,6 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
-    login_auth_login_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["app__schemas__LoginRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["app__schemas__LoginResponse"];
-                };
-            };
-            /** @description Incorrect email or password. */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
     me_auth_me_get: {
         parameters: {
             query?: never;
@@ -314,6 +262,48 @@ export interface operations {
             };
             /** @description That email is already registered. */
             409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    login_auth_login_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LoginRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LoginResponse"];
+                };
+            };
+            /** @description Incorrect email or password. */
+            401: {
                 headers: {
                     [name: string]: unknown;
                 };

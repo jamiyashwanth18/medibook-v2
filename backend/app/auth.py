@@ -32,6 +32,12 @@ from app.models import User, UserSession
 ADMIN_ROLE = "admin"
 USER_ROLE = "user"
 PATIENT_ROLE = "patient"
+DOCTOR_ROLE = "doctor"
+
+# AC-009: every doctor account an administrator provisions starts with this password,
+# a sentinel the product spec defines, not a secret generated per account. It is hashed
+# like any other password; the doctor is expected to change it on first sign-in.
+FIRST_LOGIN_PASSWORD = "<set-at-first-login>"
 
 # AC-008, NFR-002: a session that has sat idle this long must sign in again to reach any
 # protected page. Configurable so ops can tune it without a code change; 30 minutes is the

@@ -82,3 +82,24 @@ class LoginResponse(ApiModel):
 
     token: str
     user: SessionUser
+
+
+class DoctorCreateRequest(ApiModel):
+    """POST /admin/doctors body (US-003). At least one specialization is required
+    (AC-010); the doctor's first-login password is set by the server and never
+    supplied here (AC-009)."""
+
+    full_name: str
+    email: str
+    credentials: str
+    specializations: list[str]
+
+
+class DoctorRead(ApiModel):
+    """POST /admin/doctors reply: the newly provisioned doctor account (AC-009)."""
+
+    id: str
+    full_name: str
+    email: str
+    credentials: str
+    specializations: list[str]

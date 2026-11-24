@@ -38,6 +38,43 @@ class UserSession(Base):
     revoked_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
 
+class Specialization(Base):
+    """A medical specialization a doctor can be assigned (US-003)."""
+
+    __tablename__ = "specializations"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, nullable=False)
+    name: Mapped[str] = mapped_column(String(100), nullable=False, unique=True)
+
+
+class DoctorProfile(Base):
+    """The doctor-specific details of a user whose role is "doctor" (US-003): the name,
+    email and password hash live on `users` like every other account; `credentials` and
+    the specialization links live here."""
+
+    __tablename__ = "doctor_profiles"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, nullable=False)
+    user_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey("users.id"), nullable=False, unique=True
+    )
+    credentials: Mapped[str] = mapped_column(String(255), nullable=False)
+
+
+class DoctorSpecialization(Base):
+    """One specialization assigned to one doctor profile (US-003, AC-010): a doctor
+    account must have at least one row here to have been saved at all."""
+
+    __tablename__ = "doctor_specializations"
+
+    doctor_profile_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey("doctor_profiles.id"), primary_key=True, nullable=False
+    )
+    specialization_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey("specializations.id"), primary_key=True, nullable=False
+    )
+
+
 class PatientConsent(Base):
     """A patient's acceptance of the data-handling consent statement (US-001)."""
 
